@@ -8,3 +8,5 @@ cryptography>=42.0             # Ed25519 signatures over the audit chain
 # Development
 pytest>=8.0
 google-cloud-secret-manager
+fastapi>=0.115
+uvicorn[standard]>=0.32
