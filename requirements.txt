@@ -1,0 +1,10 @@
+# Runtime
+google-genai>=1.0.0            # Gemini + Gemma, via Gemini API or Vertex AI
+google-adk>=1.0.0              # Google Agent Development Kit
+google-cloud-firestore>=2.19   # incident state + audit chain persistence
+google-cloud-pubsub>=2.23      # telemetry ingest, decoupled from reasoning
+cryptography>=42.0             # Ed25519 signatures over the audit chain
+
+# Development
+pytest>=8.0
+google-cloud-secret-manager

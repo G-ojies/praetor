@@ -36,7 +36,27 @@ class Tier(enum.Enum):
 DEFAULT_MODELS = {
     # "Gemini 3.5 or newer" is the contest floor; 3.7 Flash is current stable.
     Tier.REASON: os.environ.get("PRAETOR_REASON_MODEL", "gemini-3.7-flash"),
-    Tier.TRIAGE: os.environ.get("PRAETOR_TRIAGE_MODEL", "gemma-3-27b-it"),
+    # Flash-Lite, not Gemma. Gemma is not served on Vertex's publisher endpoint
+    # at all -- it requires a self-deployed Model Garden endpoint on a GPU that
+    # cannot scale to zero, which is the wrong shape for a clinic's budget --
+    # and it 404s on the Gemini API path for this account too. Flash-Lite is
+    # roughly an order of magnitude cheaper than Flash per token and answers
+    # "is this reading interesting?" perfectly well, which is all this tier does.
+    Tier.TRIAGE: os.environ.get("PRAETOR_TRIAGE_MODEL", "gemini-3.5-flash-lite"),
+}
+
+# Vertex splits its catalogue across endpoints, and not the way you would guess:
+# the Gemini text models are served from `global` and 404 in every region, while
+# the media models are served regionally and 404 on `global`. One client cannot
+# reach both, so the media clients are built separately.
+TEXT_LOCATION = os.environ.get("PRAETOR_TEXT_LOCATION", "global")
+MEDIA_LOCATION = os.environ.get("PRAETOR_MEDIA_LOCATION", "us-central1")
+
+# Additional Google models, each earning its place rather than bolted on.
+MEDIA_MODELS = {
+    "video": os.environ.get("PRAETOR_VIDEO_MODEL", "veo-3.1-generate-preview"),
+    "music": os.environ.get("PRAETOR_MUSIC_MODEL", "lyria-002"),
+    "image": os.environ.get("PRAETOR_IMAGE_MODEL", "gemini-3-pro-image"),
 }
 
 
@@ -72,7 +92,9 @@ class GeminiReasoner:
             from google import genai  # imported lazily so offline runs need no SDK
 
             # Honours GOOGLE_GENAI_USE_VERTEXAI / GOOGLE_CLOUD_PROJECT when set,
-            # otherwise falls back to GEMINI_API_KEY.
+            # otherwise falls back to GEMINI_API_KEY. Text models live on the
+            # `global` endpoint; see TEXT_LOCATION above.
+            os.environ.setdefault("GOOGLE_CLOUD_LOCATION", TEXT_LOCATION)
             client = genai.Client()
         self._client = client
         self._models = models or dict(DEFAULT_MODELS)
@@ -125,6 +147,21 @@ class OfflineReasoner:
         if handler is None:
             raise KeyError(f"OfflineReasoner has no handler for task {task!r}")
         return Completion(data=handler(prompt), model=f"offline:{tier.value}", tier=tier)
+
+
+def media_client(kind: str):
+    """A client for Veo / Lyria / image generation, on the regional endpoint.
+
+    Separate from the text client because the two live on different Vertex
+    endpoints and a single client cannot address both.
+    """
+    from google import genai
+
+    return genai.Client(
+        vertexai=True,
+        project=os.environ["GOOGLE_CLOUD_PROJECT"],
+        location=MEDIA_LOCATION,
+    ), MEDIA_MODELS[kind]
 
 
 def select_reasoner() -> Reasoner:
