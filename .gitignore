@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.env
+*.egg-info/
+
+# Never commit the audit chain's signing key.
+*.pem
+signing-key*
