@@ -211,3 +211,53 @@ def test_the_chain_still_verifies_after_ratifications():
         f.ratify(p.proposal_id, approved=True, who="a.okafor@clinic")
     result = verify_chain([e.to_dict() for e in f.chain.entries], f.chain.public_key_hex)
     assert result.ok, result.failures
+
+
+# -- missing data must fail closed ------------------------------------------
+
+def test_unknown_lot_provenance_never_implicates_the_analyser():
+    """The failure this guards against: the fleet's own records have a gap --
+    a lot registration event was missed, or state was restored midway -- and
+    `lot_storage.get(lot)` returns None. Read naively that means "no
+    cold-chain explanation", and the fleet pulls a rural clinic's only
+    analyser because of a hole in its own bookkeeping. Missing provenance has
+    to fail closed."""
+    from praetor.agents.base import Blackboard
+    from praetor.gate.audit import AuditChain
+
+    reasoner = build_offline_reasoner()
+    fleet = Fleet(
+        agents=[ColdChainAgent(), QCAgent(), LotAgent(), Diagnostician(reasoner)],
+        gate=PolicyGate(
+            capabilities=default_capabilities(), budget=default_budget(),
+            breaker=default_breaker(), chain=AuditChain(),
+        ),
+        board=Blackboard(),
+    )
+    # Replay only the tail of the scenario, so the lot registration events at
+    # h0 and h12 are never seen -- exactly what a mid-incident restart does.
+    tail = [e for e in LabSim().run() if e.at >= T0 + 60 * HOUR]
+    fleet.run(tail)
+
+    assert hours(fleet, "instrument.take_offline") == []
+    assert fleet.board.offline_instruments == set()
+
+
+def test_unknown_provenance_is_reported_rather_than_swallowed():
+    """Failing closed silently would look like the fleet ignoring a failing
+    analyser. It has to say why it is holding off."""
+    from praetor.agents.base import Blackboard
+    from praetor.gate.audit import AuditChain
+
+    fleet = Fleet(
+        agents=[ColdChainAgent(), QCAgent(), LotAgent(), Diagnostician(build_offline_reasoner())],
+        gate=PolicyGate(
+            capabilities=default_capabilities(), budget=default_budget(),
+            breaker=default_breaker(), chain=AuditChain(),
+        ),
+        board=Blackboard(),
+    )
+    fleet.run([e for e in LabSim().run() if e.at >= T0 + 60 * HOUR])
+    unknown = fleet.board.of_kind("provenance.unknown")
+    assert unknown, "the fleet went quiet instead of explaining itself"
+    assert "stays in service" in unknown[0].summary

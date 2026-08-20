@@ -107,11 +107,38 @@ class QCAgent(Agent):
         # analyser out of service for a cold-chain problem. So lots whose
         # storage unit is under an active excursion are set aside first; the
         # instrument is implicated only by what is left unexplained.
+        # A lot counts against the instrument only when we positively know
+        # where it was stored *and* that store was healthy. Unknown provenance
+        # must not implicate the analyser: `lot_storage.get(l)` returning None
+        # for a lot whose registration event we never saw would otherwise read
+        # as "no cold-chain explanation", and the fleet would pull a clinic's
+        # only analyser because of a gap in its own records. Missing data has
+        # to fail closed, toward leaving the instrument in service.
         excursed = {s.subject for s in board.of_kind("coldchain.excursion")}
-        unexplained = {
-            l for l in self._rejecting[instrument]
-            if board.lot_storage.get(l) not in excursed
-        }
+        unexplained = set()
+        unknown_provenance = set()
+        for lot in self._rejecting[instrument]:
+            stored_in = board.lot_storage.get(lot)
+            if stored_in is None:
+                unknown_provenance.add(lot)
+            elif stored_in not in excursed:
+                unexplained.add(lot)
+        if unknown_provenance and instrument not in board.offline_instruments:
+            # Say so rather than failing silently: a scientist can supply the
+            # storage location, and the fleet should not look like it simply
+            # ignored a repeatedly failing analyser.
+            board.add(Signal(
+                kind="provenance.unknown",
+                source=self.agent_id,
+                subject=instrument,
+                at=event.at,
+                severity=Severity.SEV3,
+                summary=(f"{instrument}: storage location unknown for "
+                         f"{', '.join(sorted(unknown_provenance))}; cannot rule out a "
+                         f"cold-chain cause, so the analyser stays in service"),
+                facts={"instrument": instrument, "lots": sorted(unknown_provenance)},
+            ))
+
         if (len(unexplained) >= LOTS_IMPLICATING_INSTRUMENT
                 and instrument not in board.offline_instruments):
             board.offline_instruments.add(instrument)
