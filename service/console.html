@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Praetor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:wght@500&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#F6F8F9;--surface:#FFF;--surface-2:#EDF1F3;--surface-3:#E4EAED;
+  --ink:#10161C;--ink-2:#47555F;--ink-3:#7A8791;--rule:#D8E0E4;--rule-strong:#BCC8CE;
+  --accent:#0E7C86;--accent-soft:#DFEFF0;
+  --allow:#2E7A5B;--allow-bg:#E2F0E9;--esc:#A8720F;--esc-bg:#F6EBD8;
+  --deny:#A5382F;--deny-bg:#F6E2E0;--halt:#6B4A9E;--halt-bg:#EBE4F4;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0D1215;--surface:#141B20;--surface-2:#1C252B;--surface-3:#243039;
+  --ink:#E6ECEF;--ink-2:#9BA9B2;--ink-3:#6E7C85;--rule:#263239;--rule-strong:#35454E;
+  --accent:#3FB3BD;--accent-soft:#123033;
+  --allow:#5CAE87;--allow-bg:#13291F;--esc:#D69B3C;--esc-bg:#2C2314;
+  --deny:#D2685C;--deny-bg:#2C1917;--halt:#A78BD0;--halt-bg:#1F1A2B;
+}}
+:root[data-theme="dark"]{
+  --ground:#0D1215;--surface:#141B20;--surface-2:#1C252B;--surface-3:#243039;
+  --ink:#E6ECEF;--ink-2:#9BA9B2;--ink-3:#6E7C85;--rule:#263239;--rule-strong:#35454E;
+  --accent:#3FB3BD;--accent-soft:#123033;
+  --allow:#5CAE87;--allow-bg:#13291F;--esc:#D69B3C;--esc-bg:#2C2314;
+  --deny:#D2685C;--deny-bg:#2C1917;--halt:#A78BD0;--halt-bg:#1F1A2B;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:"Public Sans",system-ui,sans-serif;font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+header{border-bottom:1px solid var(--rule);background:var(--surface);position:sticky;top:0;z-index:5}
+.bar{max-width:1240px;margin:0 auto;padding:14px 24px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.brand{font-family:Newsreader,Georgia,serif;font-size:23px;letter-spacing:-.01em}
+.brand span{color:var(--accent)}
+.tag{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-3)}
+.spacer{flex:1}
+.seal{display:flex;align-items:center;gap:9px;padding:7px 13px;border-radius:3px;
+  border:1px solid var(--rule);background:var(--surface-2);font-size:13px}
+.seal .dot{width:8px;height:8px;border-radius:50%;background:var(--ink-3);flex:none}
+.seal.ok{background:var(--allow-bg);border-color:transparent;color:var(--allow)}
+.seal.ok .dot{background:var(--allow)}
+.seal.bad{background:var(--deny-bg);border-color:transparent;color:var(--deny)}
+.seal.bad .dot{background:var(--deny)}
+button{font:inherit;cursor:pointer;border-radius:3px;border:1px solid var(--rule-strong);
+  background:var(--surface);color:var(--ink);padding:7px 14px}
+button:hover{border-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--allow);border-color:var(--allow);color:#fff;font-weight:500}
+button.danger{background:var(--surface);border-color:var(--deny);color:var(--deny)}
+button:disabled{opacity:.45;cursor:not-allowed}
+
+main{max-width:1240px;margin:0 auto;padding:26px 24px 80px;
+  display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:26px;align-items:start}
+@media (max-width:940px){main{grid-template-columns:1fr}}
+section{background:var(--surface);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+h2{margin:0;padding:14px 18px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:500;border-bottom:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace;display:flex;gap:10px;align-items:center}
+h2 .count{margin-left:auto;color:var(--ink-2);background:var(--surface-2);
+  padding:1px 8px;border-radius:10px;font-size:11px}
+.body{padding:18px}
+.empty{padding:30px 18px;text-align:center;color:var(--ink-3);font-size:14px}
+
+/* escalations */
+.esc-card{border:1px solid var(--esc);border-left-width:3px;border-radius:3px;
+  background:var(--esc-bg);padding:15px 16px;margin-bottom:12px}
+.esc-card:last-child{margin-bottom:0}
+.esc-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:7px}
+.esc-action{font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:14px}
+.esc-res{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-2)}
+.esc-why{font-size:14px;color:var(--ink-2);margin:0 0 12px}
+.esc-meta{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3);margin-bottom:12px}
+.esc-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+input[type=text]{font:inherit;padding:7px 10px;border:1px solid var(--rule-strong);
+  border-radius:3px;background:var(--surface);color:var(--ink);min-width:190px}
+input:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
+
+/* state */
+.kv{display:grid;grid-template-columns:auto 1fr;gap:9px 16px;font-size:14px}
+.kv dt{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-3);padding-top:3px}
+.kv dd{margin:0}
+.pill{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:11.5px;
+  padding:2px 8px;border-radius:3px;background:var(--surface-2);margin:0 5px 5px 0}
+.pill.warn{background:var(--esc-bg);color:var(--esc)}
+.cause{border-left:3px solid var(--accent);padding:11px 14px;background:var(--accent-soft);
+  border-radius:0 3px 3px 0;margin-top:14px}
+.cause b{display:block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--accent);margin-bottom:5px;font-weight:500}
+
+/* signals + chain */
+.rows{max-height:420px;overflow-y:auto}
+.row{display:grid;grid-template-columns:64px 1fr;gap:12px;padding:10px 18px;
+  border-bottom:1px solid var(--rule);font-size:13.5px}
+.row:last-child{border-bottom:none}
+.row .seq{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3)}
+.row .what{min-width:0}
+.row .hash{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-3);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px}
+.chip{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  font-weight:500;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:3px}
+.chip.allow{color:var(--allow);background:var(--allow-bg)}
+.chip.escalate{color:var(--esc);background:var(--esc-bg)}
+.chip.deny{color:var(--deny);background:var(--deny-bg)}
+.chip.halt{color:var(--halt);background:var(--halt-bg)}
+.chip.ratification{color:var(--accent);background:var(--accent-soft)}
+.verifynote{padding:12px 18px;border-top:1px solid var(--rule);background:var(--surface-2);
+  font-size:12.5px;color:var(--ink-2)}
+.verifynote code{font-family:"IBM Plex Mono",monospace;font-size:11.5px}
+.fail{color:var(--deny)}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div>
+      <div class="brand">Prae<span>tor</span></div>
+      <div class="tag">Laboratory agent fleet</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="seal" id="seal"><span class="dot"></span><span id="seal-text">checking chain…</span></div>
+    <button id="refresh">Refresh</button>
+  </div>
+</header>
+
+<main>
+  <div style="display:flex;flex-direction:column;gap:26px;min-width:0">
+    <section>
+      <h2>Awaiting a human <span class="count" id="esc-count">–</span></h2>
+      <div class="body" id="escalations"><div class="empty">Loading…</div></div>
+    </section>
+    <section>
+      <h2>Fleet state</h2>
+      <div class="body" id="state"><div class="empty">Loading…</div></div>
+    </section>
+  </div>
+
+  <section style="min-width:0">
+    <h2>Audit chain <span class="count" id="chain-count">–</span></h2>
+    <div class="rows" id="chain"><div class="empty">Loading…</div></div>
+    <div class="verifynote" id="verifynote"></div>
+  </section>
+</main>
+
+<script>
+// ---------------------------------------------------------------------------
+// Canonical JSON, byte-identical to Python's
+//   json.dumps(obj, sort_keys=True, separators=(",",":"))
+//
+// The trap: JavaScript has one number type, so a payload written by Python as
+// 1.0 parses to a value indistinguishable from 1 and re-serialises as "1" --
+// a different byte string, a different SHA-256, and a console that reports
+// tampering on a chain that is perfectly intact. Live payloads carry
+// confidence: 1.0, so this is not hypothetical.
+//
+// The fix is to never parse numbers into JS numbers at all. This parser keeps
+// each number's original token from the wire, so Python's own formatting is
+// preserved verbatim -- 1.0 stays "1.0", 1e-07 stays "1e-07".
+// ---------------------------------------------------------------------------
+function parsePreservingNumbers(text){
+  let i = 0;
+  function ws(){ while(i<text.length && " \t\n\r".includes(text[i])) i++; }
+  function value(){
+    ws();
+    const c = text[i];
+    if(c === '{'){ i++; const o = {}; ws();
+      if(text[i] === '}'){ i++; return o; }
+      for(;;){ ws(); const k = str(); ws(); i++; /* : */ o[k] = value(); ws();
+        if(text[i] === ','){ i++; continue; } i++; return o; } }
+    if(c === '['){ i++; const a = []; ws();
+      if(text[i] === ']'){ i++; return a; }
+      for(;;){ a.push(value()); ws();
+        if(text[i] === ','){ i++; continue; } i++; return a; } }
+    if(c === '"') return str();
+    if(text.startsWith("true", i)){ i += 4; return true; }
+    if(text.startsWith("false", i)){ i += 5; return false; }
+    if(text.startsWith("null", i)){ i += 4; return null; }
+    const start = i;
+    while(i < text.length && "-+.eE0123456789".includes(text[i])) i++;
+    return { __num: text.slice(start, i) };   // the raw token, untouched
+  }
+  function str(){
+    i++; let out = "";
+    while(text[i] !== '"'){
+      if(text[i] === '\\'){
+        i++; const e = text[i];
+        if(e === 'u'){ out += String.fromCharCode(parseInt(text.substr(i+1,4),16)); i += 5; }
+        else { out += {'"':'"','\\':'\\','/':'/',b:'\b',f:'\f',n:'\n',r:'\r',t:'\t'}[e] ?? e; i++; }
+      } else { out += text[i++]; }
+    }
+    i++; return out;
+  }
+  return value();
+}
+
+function esc(s){
+  let out = '"';
+  for(const ch of s){
+    const c = ch.codePointAt(0);
+    if(ch === '"') out += '\\"';
+    else if(ch === '\\') out += '\\\\';
+    else if(c === 8) out += '\\b'; else if(c === 9) out += '\\t';
+    else if(c === 10) out += '\\n'; else if(c === 12) out += '\\f';
+    else if(c === 13) out += '\\r';
+    else if(c < 0x20) out += '\\u' + c.toString(16).padStart(4,'0');
+    else if(c < 0x7f) out += ch;
+    else if(c <= 0xffff) out += '\\u' + c.toString(16).padStart(4,'0');
+    else { const h = Math.floor((c-0x10000)/0x400)+0xD800, l=((c-0x10000)%0x400)+0xDC00;
+           out += '\\u'+h.toString(16).padStart(4,'0')+'\\u'+l.toString(16).padStart(4,'0'); }
+  }
+  return out + '"';
+}
+
+function canonical(v){
+  if(v === null) return "null";
+  if(typeof v === "boolean") return v ? "true" : "false";
+  if(typeof v === "string") return esc(v);
+  if(Array.isArray(v)) return "[" + v.map(canonical).join(",") + "]";
+  if(v && v.__num !== undefined) return v.__num;
+  return "{" + Object.keys(v).sort().map(k => esc(k)+":"+canonical(v[k])).join(",") + "}";
+}
+
+const num = v => (v && v.__num !== undefined) ? Number(v.__num) : v;
+const raw = v => (v && v.__num !== undefined) ? v.__num : String(v);
+
+async function sha256hex(s){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+const hexBytes = h => new Uint8Array(h.match(/../g).map(b => parseInt(b,16)));
+
+// ---------------------------------------------------------------------------
+// Verification. Recomputes every hash, checks every link, and verifies every
+// signature. Needs only the public key, so this page can prove the history is
+// intact without any ability to write it.
+// ---------------------------------------------------------------------------
+const GENESIS = "0".repeat(64);
+
+async function verifyChain(entries, publicKeyHex){
+  const failures = [];
+  let expectedPrev = GENESIS, sigsChecked = 0, key = null;
+
+  try{
+    key = await crypto.subtle.importKey("raw", hexBytes(publicKeyHex), "Ed25519", false, ["verify"]);
+  }catch{ /* browser without Ed25519: hashes and links still verify */ }
+
+  for(const e of entries){
+    const seq = raw(e.seq);
+    if(e.prev_hash !== expectedPrev) failures.push(`seq ${seq}: broken link`);
+
+    const recomputed = await sha256hex(canonical({
+      seq: e.seq, prev_hash: e.prev_hash, kind: e.kind,
+      payload: e.payload, recorded_at: e.recorded_at,
+    }));
+    if(recomputed !== e.entry_hash) failures.push(`seq ${seq}: payload altered`);
+
+    if(key){
+      const ok = await crypto.subtle.verify("Ed25519", key, hexBytes(e.signature), hexBytes(e.entry_hash));
+      if(!ok) failures.push(`seq ${seq}: bad signature`); else sigsChecked++;
+    }
+    expectedPrev = e.entry_hash;
+  }
+  return { ok: failures.length === 0, failures, sigsChecked, ed25519: !!key, checked: entries.length };
+}
+
+// ---------------------------------------------------------------------------
+// UI
+// ---------------------------------------------------------------------------
+const $ = id => document.getElementById(id);
+const shorten = h => h.slice(0,10) + "…" + h.slice(-6);
+
+async function getJSON(path){
+  const r = await fetch(path, {headers:{"Accept":"application/json"}});
+  if(!r.ok) throw new Error(`${path} -> HTTP ${r.status}`);
+  return parsePreservingNumbers(await r.text());
+}
+
+function renderEscalations(data){
+  const pending = data.pending || [];
+  $("esc-count").textContent = pending.length;
+  if(!pending.length){
+    $("escalations").innerHTML = `<div class="empty">Nothing is waiting on you.<br>
+      The fleet is handling this on its own.</div>`;
+    return;
+  }
+  $("escalations").innerHTML = pending.map(p => `
+    <div class="esc-card">
+      <div class="esc-head">
+        <span class="esc-action">${p.action}</span>
+        <span class="esc-res">${p.resource}</span>
+      </div>
+      <p class="esc-why">${p.rationale}</p>
+      <div class="esc-meta">${p.agent} · confidence ${num(p.confidence).toFixed(2)}</div>
+      <div class="esc-actions">
+        <input type="text" placeholder="your name or email" class="who" value="${localStorage.getItem('praetor.who')||''}">
+        <button class="primary" data-id="${p.proposal_id}" data-approve="1">Approve</button>
+        <button class="danger" data-id="${p.proposal_id}" data-approve="0">Refuse</button>
+      </div>
+    </div>`).join("");
+
+  $("escalations").querySelectorAll("button[data-id]").forEach(btn => {
+    btn.onclick = async () => {
+      const who = btn.closest(".esc-card").querySelector(".who").value.trim();
+      if(!who){ alert("Enter your name. Approvals are attributable."); return; }
+      localStorage.setItem('praetor.who', who);
+      btn.closest(".esc-card").querySelectorAll("button").forEach(b => b.disabled = true);
+      await fetch(`/api/escalations/${btn.dataset.id}/decide`, {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({approve: btn.dataset.approve === "1", who}),
+      });
+      load();
+    };
+  });
+}
+
+function renderState(s){
+  const pills = (arr, cls="") => arr.length
+    ? arr.map(x => `<span class="pill ${cls}">${x}</span>`).join("")
+    : `<span style="color:var(--ink-3)">none</span>`;
+  const sig = (s.signals||[]).map(x =>
+    `<div class="row"><span class="seq">SEV${raw(x.severity)}</span>
+     <div class="what"><b>${x.kind}</b><div class="hash">${x.summary}</div></div></div>`).join("");
+  $("state").innerHTML = `
+    <dl class="kv">
+      <dt>Quarantined</dt><dd>${pills(s.quarantined_lots||[], "warn")}</dd>
+      <dt>Held</dt><dd>${pills(s.held_batches||[], "warn")}</dd>
+      <dt>Offline</dt><dd>${pills(s.offline_instruments||[])}</dd>
+    </dl>
+    ${s.root_cause ? `<div class="cause"><b>Diagnosis · confidence ${num(s.confidence).toFixed(2)}</b>${s.root_cause}</div>` : ""}
+    ${sig ? `<div style="margin:16px -18px -18px">${sig}</div>` : ""}`;
+}
+
+function renderChain(entries){
+  $("chain-count").textContent = entries.length;
+  if(!entries.length){ $("chain").innerHTML = `<div class="empty">No decisions recorded yet.</div>`; return; }
+  $("chain").innerHTML = entries.slice().reverse().map(e => {
+    const kind = e.kind === "ratification" ? "ratification" : (e.payload?.decision?.verdict ?? "allow");
+    const p = e.payload?.proposal ?? {};
+    const label = e.kind === "ratification"
+      ? `${e.payload.approved ? "approved" : "refused"} by ${e.payload.who}`
+      : (p.action_type ?? e.kind);
+    return `<div class="row">
+      <span class="seq">#${raw(e.seq)}</span>
+      <div class="what">
+        <span class="chip ${kind}">${kind}</span>
+        <span class="mono" style="font-size:12.5px;margin-left:7px">${label}</span>
+        <div class="hash">${p.resource ? p.resource + " · " : ""}${shorten(e.entry_hash)}</div>
+      </div></div>`;
+  }).join("");
+}
+
+async function load(){
+  try{
+    const [esc, st, audit] = await Promise.all([
+      getJSON("/api/escalations"), getJSON("/api/state"), getJSON("/api/audit"),
+    ]);
+    renderEscalations(esc);
+    renderState(st);
+    renderChain(audit.entries || []);
+
+    const v = await verifyChain(audit.entries || [], audit.public_key);
+    const seal = $("seal");
+    seal.className = "seal " + (v.ok ? "ok" : "bad");
+    $("seal-text").textContent = v.ok
+      ? `chain verified · ${v.checked} entries`
+      : `chain FAILED · ${v.failures.length} problem${v.failures.length>1?"s":""}`;
+    $("verifynote").innerHTML = v.ok
+      ? `Verified in this browser. ${v.checked} hashes recomputed, ${v.checked} links checked,
+         ${v.ed25519 ? `${v.sigsChecked} Ed25519 signatures verified`
+                     : `signatures not checked — this browser has no Ed25519 in WebCrypto`}.
+         <br>Public key <code>${audit.public_key.slice(0,32)}…</code> — verification needs
+         only this, never the signing key.`
+      : `<span class="fail">${v.failures.slice(0,5).join("<br>")}</span>`;
+  }catch(err){
+    $("verifynote").innerHTML = `<span class="fail">${err.message}</span>`;
+  }
+}
+
+$("refresh").onclick = load;
+load();
+</script>
+</body>
+</html>

@@ -121,6 +121,36 @@ class Fleet:
             self.step(event)
         return self
 
+    def ratify(self, proposal_id: str, approved: bool, who: str) -> dict:
+        """A human's answer to an escalation.
+
+        The ratification is itself an audit entry. A control plane that logs
+        what the fleet proposed but not who let it through has recorded the
+        least interesting half of the story: for a fail-open action, the
+        accountable act is the approval, not the request.
+        """
+        match = next((p for p in self.escalations if p.proposal_id == proposal_id), None)
+        if match is None:
+            raise KeyError(f"no pending escalation {proposal_id!r}")
+
+        self.gate.chain.append("ratification", {
+            "proposal": match.to_dict(),
+            "approved": approved,
+            "who": who,
+        })
+        self.escalations.remove(match)
+
+        if not approved:
+            return {"status": "rejected", "proposal_id": proposal_id}
+
+        result = self.executor.execute(match)
+        self.timeline.append(TimelineEntry(
+            at=match.created_at, agent=match.agent_id, action=match.action_type,
+            resource=match.resource, verdict="ratified",
+            reasons=(f"approved by {who}",), rationale=match.rationale,
+        ))
+        return {"status": "executed", "proposal_id": proposal_id, "result": result}
+
     # -- reporting ----------------------------------------------------------
     def counts(self) -> dict[str, int]:
         out: dict[str, int] = {}

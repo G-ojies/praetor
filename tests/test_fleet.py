@@ -148,3 +148,66 @@ def test_the_frontier_model_is_called_once_not_per_event(run):
     """735 events, one diagnosis. If this ever climbs, the clinic's bill does."""
     _, reasoner = run
     assert sum(1 for task, _ in reasoner.calls if task == "diagnose") == 1
+
+
+# -- human ratification -----------------------------------------------------
+
+def _fresh_fleet():
+    from praetor.gate.audit import AuditChain
+    reasoner = build_offline_reasoner()
+    f = Fleet(
+        agents=[ColdChainAgent(), QCAgent(), LotAgent(), Diagnostician(reasoner)],
+        gate=PolicyGate(
+            capabilities=default_capabilities(), budget=default_budget(),
+            breaker=default_breaker(), chain=AuditChain(),
+        ),
+    )
+    f.run(LabSim().run())
+    return f
+
+
+def test_approving_an_escalation_executes_it_and_records_who():
+    f = _fresh_fleet()
+    p = f.escalations[0]
+    before = len(f.executor.performed)
+    result = f.ratify(p.proposal_id, approved=True, who="a.okafor@clinic")
+    assert result["status"] == "executed"
+    assert len(f.executor.performed) == before + 1
+    entry = f.chain.entries[-1]
+    assert entry.kind == "ratification"
+    assert entry.payload["who"] == "a.okafor@clinic"
+    assert entry.payload["approved"] is True
+
+
+def test_rejecting_an_escalation_executes_nothing_but_is_still_recorded():
+    """A refusal is as much a decision as an approval, and a log that only
+    keeps the approvals cannot answer 'why was this never released?'."""
+    f = _fresh_fleet()
+    p = f.escalations[0]
+    before = len(f.executor.performed)
+    result = f.ratify(p.proposal_id, approved=False, who="a.okafor@clinic")
+    assert result["status"] == "rejected"
+    assert len(f.executor.performed) == before
+    assert f.chain.entries[-1].payload["approved"] is False
+
+
+def test_an_escalation_cannot_be_ratified_twice():
+    f = _fresh_fleet()
+    p = f.escalations[0]
+    f.ratify(p.proposal_id, approved=True, who="a.okafor@clinic")
+    with pytest.raises(KeyError):
+        f.ratify(p.proposal_id, approved=True, who="someone.else@clinic")
+
+
+def test_ratifying_an_unknown_proposal_is_refused():
+    f = _fresh_fleet()
+    with pytest.raises(KeyError):
+        f.ratify("prop_doesnotexist", approved=True, who="a.okafor@clinic")
+
+
+def test_the_chain_still_verifies_after_ratifications():
+    f = _fresh_fleet()
+    for p in list(f.escalations)[:3]:
+        f.ratify(p.proposal_id, approved=True, who="a.okafor@clinic")
+    result = verify_chain([e.to_dict() for e in f.chain.entries], f.chain.public_key_hex)
+    assert result.ok, result.failures

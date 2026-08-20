@@ -12,8 +12,18 @@ Three surfaces, deliberately separated by who is allowed to use them:
   /              The console itself, which verifies the audit chain in the
                  browser from the public key. It is a reader, not a trustee.
 
-State lives in Firestore, not in this process, because Cloud Run will start and
-stop containers underneath us and an incident must survive that.
+The audit chain lives in Firestore and survives container restarts. The
+blackboard -- signals, quarantined lots, held batches, the pending escalation
+queue -- does not yet: it is per-process. That is a real constraint, not a
+detail, because Cloud Run will happily run several containers and route two
+requests about the same incident to two different ones, each with its own idea
+of what has already been quarantined.
+
+Until the blackboard is persisted, the service is pinned to a single instance.
+That is honest rather than clever: one container with correct state beats three
+with divergent state, and the fleet's decision rate is nowhere near needing
+horizontal scale. The gate's guarantees are unaffected either way -- they are
+enforced per proposal against Firestore, not against blackboard state.
 """
 
 from __future__ import annotations
@@ -141,6 +151,20 @@ def escalations() -> dict:
             for p in fleet().escalations
         ]
     }
+
+
+@app.post("/api/escalations/{proposal_id}/decide")
+async def decide(proposal_id: str, request: Request) -> dict:
+    """Ratify or refuse one escalated action. The only write a human makes."""
+    body: dict[str, Any] = await request.json()
+    who = (body.get("who") or "").strip()
+    if not who:
+        # No anonymous approvals. An audit trail naming "someone" is not one.
+        raise HTTPException(400, "'who' is required: approvals are attributable")
+    try:
+        return fleet().ratify(proposal_id, bool(body.get("approve")), who)
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
 
 
 @app.get("/api/audit")
