@@ -71,11 +71,18 @@ class Fleet:
         gate: PolicyGate,
         executor: Executor | None = None,
         board: Blackboard | None = None,
+        store: Any = None,
     ) -> None:
         self.agents = agents
         self.gate = gate
         self.executor = executor or SimulatedExecutor()
         self.board = board or Blackboard()
+        # Optional durable store. Agents mutate the blackboard's sets and
+        # scalars in place, so there is no single mutation method to intercept;
+        # the loop diffs a snapshot instead and writes only on an actual change.
+        # That keeps Firestore seeing a write per change rather than per event,
+        # which matters when most events are an unremarkable fridge reading.
+        self.store = store
         self.timeline: list[TimelineEntry] = []
         self.escalations: list[ActionProposal] = []
 
@@ -94,6 +101,29 @@ class Fleet:
         return min((s.severity for s in pool), default=Severity.SEV3)
 
     def step(self, event: Any) -> None:
+        before = self._snapshot()
+        self._step(event)
+        self._persist_if_changed(before)
+
+    # -- persistence --------------------------------------------------------
+    def _snapshot(self) -> dict | None:
+        if self.store is None:
+            return None
+        from praetor.state import to_dict
+
+        return to_dict(self.board)
+
+    def _persist_if_changed(self, before: dict | None) -> bool:
+        if self.store is None or before is None:
+            return False
+        from praetor.state import to_dict
+
+        if to_dict(self.board) == before:
+            return False
+        self.store.save(self.board)
+        return True
+
+    def _step(self, event: Any) -> None:
         for agent in self.agents:
             agent.observe(event, self.board)
 
@@ -129,6 +159,7 @@ class Fleet:
         least interesting half of the story: for a fail-open action, the
         accountable act is the approval, not the request.
         """
+        before = self._snapshot()
         match = next((p for p in self.escalations if p.proposal_id == proposal_id), None)
         if match is None:
             raise KeyError(f"no pending escalation {proposal_id!r}")
@@ -141,6 +172,7 @@ class Fleet:
         self.escalations.remove(match)
 
         if not approved:
+            self._persist_if_changed(before)
             return {"status": "rejected", "proposal_id": proposal_id}
 
         result = self.executor.execute(match)
@@ -149,6 +181,7 @@ class Fleet:
             resource=match.resource, verdict="ratified",
             reasons=(f"approved by {who}",), rationale=match.rationale,
         ))
+        self._persist_if_changed(before)
         return {"status": "executed", "proposal_id": proposal_id, "result": result}
 
     # -- reporting ----------------------------------------------------------

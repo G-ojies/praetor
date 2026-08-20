@@ -12,18 +12,19 @@ Three surfaces, deliberately separated by who is allowed to use them:
   /              The console itself, which verifies the audit chain in the
                  browser from the public key. It is a reader, not a trustee.
 
-The audit chain lives in Firestore and survives container restarts. The
-blackboard -- signals, quarantined lots, held batches, the pending escalation
-queue -- does not yet: it is per-process. That is a real constraint, not a
-detail, because Cloud Run will happily run several containers and route two
-requests about the same incident to two different ones, each with its own idea
-of what has already been quarantined.
+Both halves of the state are durable. The audit chain is append-only and
+tamper-evident; the blackboard -- signals, quarantined lots, held batches -- is
+a bounded working set written through on change. A cold start restores the
+blackboard rather than beginning fresh, because Cloud Run scales to zero and a
+restart midway through an incident is the normal case, not an edge one.
 
-Until the blackboard is persisted, the service is pinned to a single instance.
-That is honest rather than clever: one container with correct state beats three
-with divergent state, and the fleet's decision rate is nowhere near needing
-horizontal scale. The gate's guarantees are unaffected either way -- they are
-enforced per proposal against Firestore, not against blackboard state.
+The service still runs one instance. Durability is not the same as
+concurrency: two containers would hold two copies of the same restored
+blackboard and diverge as each handled different events. Making that correct
+means moving the blackboard behind the same transactional discipline as the
+chain, which is worth doing when the decision rate justifies it and is not
+close to justifying it today. The gate's guarantees do not depend on either
+choice; they are enforced per proposal.
 """
 
 from __future__ import annotations
@@ -48,6 +49,7 @@ from praetor.orchestrator import Fleet
 from praetor.policy_config import default_breaker, default_budget, default_capabilities
 from praetor.reasoning import select_reasoner
 from praetor.sim.lab import Event, EventKind
+from praetor.state import FirestoreBlackboard
 
 PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT", "praetor-505914")
 NAMESPACE = os.environ.get("PRAETOR_NAMESPACE", "live")
@@ -62,6 +64,7 @@ def fleet() -> Fleet:
     global _fleet
     if _fleet is None:
         reasoner = select_reasoner()
+        store = FirestoreBlackboard(project=PROJECT, namespace=NAMESPACE)
         _fleet = Fleet(
             agents=[ColdChainAgent(), QCAgent(), LotAgent(), Diagnostician(reasoner)],
             gate=PolicyGate(
@@ -70,6 +73,10 @@ def fleet() -> Fleet:
                 breaker=default_breaker(),
                 chain=FirestoreAuditChain(project=PROJECT, namespace=NAMESPACE),
             ),
+            # Restored, not fresh. Cloud Run scales to zero, so a cold start
+            # midway through an incident is the normal case, not an edge one.
+            board=store.load(),
+            store=store,
         )
     return _fleet
 

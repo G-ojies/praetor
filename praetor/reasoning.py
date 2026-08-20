@@ -53,10 +53,18 @@ TEXT_LOCATION = os.environ.get("PRAETOR_TEXT_LOCATION", "global")
 MEDIA_LOCATION = os.environ.get("PRAETOR_MEDIA_LOCATION", "us-central1")
 
 # Additional Google models, each earning its place rather than bolted on.
+# The endpoint is per model, not per category: Veo and Lyria are regional,
+# while the image model sits on `global` alongside the Gemini text models.
+# Discovered by probing the live catalogue, because the docs do not say so.
 MEDIA_MODELS = {
     "video": os.environ.get("PRAETOR_VIDEO_MODEL", "veo-3.1-generate-preview"),
     "music": os.environ.get("PRAETOR_MUSIC_MODEL", "lyria-002"),
     "image": os.environ.get("PRAETOR_IMAGE_MODEL", "gemini-3-pro-image"),
+}
+MEDIA_LOCATIONS = {
+    "video": MEDIA_LOCATION,
+    "music": MEDIA_LOCATION,
+    "image": TEXT_LOCATION,
 }
 
 
@@ -160,7 +168,7 @@ def media_client(kind: str):
     return genai.Client(
         vertexai=True,
         project=os.environ["GOOGLE_CLOUD_PROJECT"],
-        location=MEDIA_LOCATION,
+        location=MEDIA_LOCATIONS[kind],
     ), MEDIA_MODELS[kind]
 
 

@@ -45,6 +45,16 @@ class Signal:
     facts: dict[str, Any] = field(default_factory=dict)
 
 
+# The blackboard is a working set, not a history. The audit chain is the
+# durable record and it is append-only; the blackboard exists so agents can see
+# what is currently going on. Left unbounded it grows a signal per QC rejection
+# forever, and since it persists as a single Firestore document, it would
+# eventually hit the 1 MiB document limit and start failing writes -- weeks
+# into a deployment, in a clinic, which is the worst possible time to discover
+# a storage ceiling.
+MAX_SIGNALS = 250
+
+
 @dataclass
 class Blackboard:
     """Shared fleet state for one simulated (or real) run.
@@ -58,6 +68,11 @@ class Blackboard:
 
     signals: list[Signal] = field(default_factory=list)
     proposals: list[ActionProposal] = field(default_factory=list)
+    # Every (kind, subject) the fleet has *ever* signalled. Kept separately and
+    # permanently, because `seen` drives once-only behaviour -- if it consulted
+    # the trimmed signal window instead, an old excursion would age out and the
+    # fleet would re-announce it as new.
+    seen_keys: set[str] = field(default_factory=set)
     # Resources the fleet has already acted on, so agents do not re-propose.
     held_batches: set[str] = field(default_factory=set)
     quarantined_lots: set[str] = field(default_factory=set)
@@ -72,6 +87,9 @@ class Blackboard:
 
     def add(self, signal: Signal) -> Signal:
         self.signals.append(signal)
+        self.seen_keys.add(f"{signal.kind}\u0000{signal.subject}")
+        if len(self.signals) > MAX_SIGNALS:
+            del self.signals[: len(self.signals) - MAX_SIGNALS]
         return signal
 
     def since(self, at: float, kind: str | None = None) -> list[Signal]:
@@ -81,7 +99,8 @@ class Blackboard:
         return [s for s in self.signals if s.kind == kind]
 
     def seen(self, kind: str, subject: str) -> bool:
-        return any(s.kind == kind and s.subject == subject for s in self.signals)
+        """Has this ever been signalled? Independent of the retention window."""
+        return f"{kind}\u0000{subject}" in self.seen_keys
 
 
 class Agent(abc.ABC):
