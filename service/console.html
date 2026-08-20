@@ -116,6 +116,17 @@ input:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
   font-size:12.5px;color:var(--ink-2)}
 .verifynote code{font-family:"IBM Plex Mono",monospace;font-size:11.5px}
 .fail{color:var(--deny)}
+.mediahint{margin:0 0 14px;font-size:13.5px;color:var(--ink-3)}
+.mediarow{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}
+#media-out img{max-width:100%;height:auto;border-radius:3px;border:1px solid var(--rule);display:block}
+#media-out audio{width:100%;margin-top:10px}
+.mediacap{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-3);margin-top:7px}
+.recall{border-left:3px solid var(--accent);padding:11px 14px;background:var(--surface-2);
+  border-radius:0 3px 3px 0;margin-bottom:10px}
+.recall:last-child{margin-bottom:0}
+.recall .sim{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--accent);letter-spacing:.06em}
+.recall .rc{font-size:14px;margin:4px 0 3px}
+.recall .res{font-size:13px;color:var(--ink-2)}
 </style>
 </head>
 <body>
@@ -140,6 +151,22 @@ input:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
     <section>
       <h2>Fleet state</h2>
       <div class="body" id="state"><div class="empty">Loading…</div></div>
+    </section>
+    <section>
+      <h2>For whoever is at the clinic <span class="count" id="media-model">–</span></h2>
+      <div class="body" id="media">
+        <p class="mediahint">The person standing at the failed fridge is usually not the
+          scientist. These are for them.</p>
+        <div class="mediarow">
+          <button id="gen-card">Illustrate the fix</button>
+          <button id="gen-audio">Speak the handover</button>
+        </div>
+        <div id="media-out"></div>
+      </div>
+    </section>
+    <section>
+      <h2>Seen before? <span class="count" id="mem-count">–</span></h2>
+      <div class="body" id="memory"><div class="empty">Loading…</div></div>
     </section>
   </div>
 
@@ -384,8 +411,53 @@ async function load(){
   }
 }
 
-$("refresh").onclick = load;
+async function media(button, path, render){
+  const label = button.textContent;
+  button.disabled = true; button.textContent = "generating…";
+  try{
+    const r = await fetch(path);
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const model = r.headers.get("X-Praetor-Model") || "";
+    $("media-model").textContent = model;
+    render(URL.createObjectURL(await r.blob()), model);
+  }catch(err){
+    $("media-out").innerHTML = `<span class="fail">${err.message}</span>`;
+  }finally{
+    button.disabled = false; button.textContent = label;
+  }
+}
+
+$("gen-card").onclick = e => media(e.target, "/api/media/remediation.png", (url, model) => {
+  $("media-out").innerHTML =
+    `<img src="${url}" alt="Illustrated instruction: move reagent boxes from the failed fridge to the working one">
+     <div class="mediacap">${model} · temperatures are the measured values, not invented</div>`;
+});
+
+$("gen-audio").onclick = e => media(e.target, "/api/media/handover.mp3", (url, model) => {
+  $("media-out").innerHTML =
+    `<audio controls src="${url}"></audio><div class="mediacap">${model}</div>`;
+});
+
+async function loadMemory(){
+  try{
+    const m = await getJSON("/api/memory");
+    const hits = m.recollections || [];
+    $("mem-count").textContent = hits.length;
+    $("memory").innerHTML = hits.length
+      ? hits.map(h => `<div class="recall">
+          <div class="sim">${num(h.similarity).toFixed(3)} · ${h.incident_id}</div>
+          <div class="rc">${h.root_cause}</div>
+          <div class="res">${h.resolution}</div></div>`).join("")
+      : `<div class="empty">No past incident resembles this one closely enough to help.
+         <br>Saying nothing beats forcing a resemblance.</div>`;
+  }catch(err){
+    $("memory").innerHTML = `<div class="empty fail">${err.message}</div>`;
+  }
+}
+
+$("refresh").onclick = () => { load(); loadMemory(); };
 load();
+loadMemory();
 </script>
 </body>
 </html>

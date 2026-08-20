@@ -56,13 +56,16 @@ MEDIA_LOCATION = os.environ.get("PRAETOR_MEDIA_LOCATION", "us-central1")
 # The endpoint is per model, not per category: Veo and Lyria are regional,
 # while the image model sits on `global` alongside the Gemini text models.
 # Discovered by probing the live catalogue, because the docs do not say so.
+# No video entry. Veo is inaccessible on this project at every published
+# version and needs allowlisting, so listing it here would put a model this
+# deployment does not use into /api/models -- an endpoint whose only job is to
+# state truthfully what is running. The need Veo covered, a handover
+# consumable without hands or eyes, is met by speech.
 MEDIA_MODELS = {
-    "video": os.environ.get("PRAETOR_VIDEO_MODEL", "veo-3.1-generate-preview"),
     "music": os.environ.get("PRAETOR_MUSIC_MODEL", "lyria-002"),
     "image": os.environ.get("PRAETOR_IMAGE_MODEL", "gemini-3-pro-image"),
 }
 MEDIA_LOCATIONS = {
-    "video": MEDIA_LOCATION,
     "music": MEDIA_LOCATION,
     "image": TEXT_LOCATION,
 }

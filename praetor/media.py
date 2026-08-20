@@ -85,18 +85,6 @@ def remediation_prompt(unit: str, lots: list[str], destination: str,
     )
 
 
-def handover_prompt(root_cause: str, acted: int, escalated: int) -> str:
-    return (
-        "A calm 15-second shift-handover briefing shot for a medical laboratory scientist. "
-        "Slow push in on a quiet clinic laboratory at dawn: a benchtop analyser, racks of "
-        "sample tubes, a refrigerator with a warning indicator. Muted clinical colours, "
-        "soft natural light through a window, documentary style, no people, no on-screen "
-        f"text. The mood is contained and under control, not alarming. Context: {root_cause} "
-        f"The overnight fleet handled {acted} actions on its own and left {escalated} for "
-        "a human to approve."
-    )
-
-
 def alarm_prompt(severity: int) -> str:
     tone = {
         1: "urgent but not panicked: a firm rising three-note motif, low strings and a clear bell",
@@ -129,29 +117,6 @@ def generate_image(prompt: str) -> Media:
             return Media("image", model, inline.mime_type or "image/png",
                          data=inline.data, cache_key=_key("image", prompt))
     raise RuntimeError("image model returned no image part")
-
-
-def generate_video(prompt: str, seconds: int = 8) -> Media:
-    """Veo is asynchronous and bills by the second. Kept short deliberately."""
-    client, model = media_client("video")
-    from google.genai import types
-
-    operation = client.models.generate_videos(
-        model=model,
-        prompt=prompt,
-        config=types.GenerateVideosConfig(number_of_videos=1, duration_seconds=seconds),
-    )
-    import time
-
-    while not operation.done:
-        time.sleep(10)
-        operation = client.operations.get(operation)
-
-    result = operation.response.generated_videos[0].video
-    return Media("video", model, "video/mp4",
-                 data=getattr(result, "video_bytes", None),
-                 uri=getattr(result, "uri", None),
-                 cache_key=_key("video", prompt))
 
 
 def generate_music(prompt: str) -> Media:

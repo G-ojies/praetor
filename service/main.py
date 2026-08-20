@@ -36,7 +36,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from praetor.agents.coldchain import ColdChainAgent
 from praetor.agents.diagnostician import Diagnostician
@@ -187,6 +187,116 @@ def audit() -> dict:
         "verified": result.ok,
         "failures": result.failures,
         "entries": entries,
+    }
+
+
+# Generated media is cached in process. It is deliberately not cached in
+# Firestore: a 1 MB PNG does not fit a document, and paying Cloud Storage for
+# an artefact regenerated a handful of times is worse than regenerating it.
+# Nothing here runs on an event -- media is requested, never triggered.
+_media_cache: dict[str, Any] = {}
+
+
+def _media(key: str, produce) -> Response:
+    if key not in _media_cache:
+        try:
+            _media_cache[key] = produce()
+        except Exception as exc:
+            raise HTTPException(502, f"{key}: {type(exc).__name__}: {exc}") from exc
+    item = _media_cache[key]
+    return Response(content=item.data, media_type=item.mime,
+                    headers={"X-Praetor-Model": item.model, "Cache-Control": "public, max-age=3600"})
+
+
+@app.get("/api/media/remediation.png")
+def remediation_card() -> Response:
+    """An illustrated instruction for whoever opened the clinic.
+
+    The person standing at the failed fridge at 06:00 is usually not the
+    laboratory scientist. Written steps assume training this person may not
+    have; a picture does not.
+    """
+    from praetor.media import generate_image, remediation_prompt
+
+    board = fleet().board
+    excursions = board.of_kind("coldchain.excursion")
+    if not excursions:
+        raise HTTPException(404, "no cold-chain excursion to illustrate")
+    unit = excursions[0].subject
+    peak = float(excursions[0].facts.get("peak_c", 12.0))
+    lots = sorted(board.quarantined_lots)
+    healthy = next((u for u in sorted(set(board.lot_storage.values())) if u != unit), "a working fridge")
+    return _media(f"remediation:{unit}:{peak:.0f}:{len(lots)}",
+                  lambda: generate_image(remediation_prompt(unit, lots, healthy, peak)))
+
+
+@app.get("/api/media/handover.mp3")
+def handover_audio() -> Response:
+    """The same briefing the console shows, as speech. The scientist covering
+    four sites is usually driving between them."""
+    from praetor.media import speak
+
+    f = fleet()
+    counts = f.counts()
+    text = (
+        f"Praetor handover. {f.board.root_cause or 'No single root cause identified yet.'} "
+        f"The fleet took {counts.get('allow', 0)} actions on its own and is holding "
+        f"{len(f.escalations)} for your approval. "
+        f"{len(f.board.quarantined_lots)} reagent lots are quarantined and "
+        f"{len(f.board.held_batches)} batches of results are held."
+    )
+    return _media(f"handover:{hash(text)}", lambda: speak(text))
+
+
+@app.get("/api/media/alarm/{severity}.wav")
+def alarm(severity: int) -> Response:
+    """A distinct motif per severity. At the bench, hands are gloved and eyes
+    are down a microscope; audio is the channel that still works."""
+    from praetor.media import alarm_prompt, generate_music
+
+    if severity not in (1, 2, 3, 4):
+        raise HTTPException(400, "severity must be 1-4")
+    return _media(f"alarm:{severity}", lambda: generate_music(alarm_prompt(severity)))
+
+
+@app.get("/api/memory")
+def memory() -> dict:
+    """Past incidents resembling the current one."""
+    from praetor.memory import IncidentMemory, describe
+
+    board = fleet().board
+    if not board.signals:
+        return {"query": None, "recollections": []}
+    query = describe(board.signals[-8:])
+    try:
+        hits = IncidentMemory(project=PROJECT).recall(query)
+    except Exception as exc:
+        raise HTTPException(502, f"recall failed: {exc}") from exc
+    return {
+        "query": query[:280],
+        "recollections": [
+            {"incident_id": h.incident_id, "summary": h.summary, "root_cause": h.root_cause,
+             "resolution": h.resolution, "similarity": round(h.similarity, 3)}
+            for h in hits
+        ],
+    }
+
+
+@app.get("/api/models")
+def models() -> dict:
+    """Exactly which models this deployment uses, read from the code that uses
+    them rather than from a claim in a document."""
+    from praetor.media import models_in_use
+    from praetor.memory import EMBED_MODEL
+    from praetor.reasoning import DEFAULT_MODELS, MEDIA_LOCATIONS, Tier
+
+    return {
+        "reasoning": DEFAULT_MODELS[Tier.REASON],
+        "triage": DEFAULT_MODELS[Tier.TRIAGE],
+        "embedding": EMBED_MODEL,
+        "media": models_in_use(),
+        "locations": MEDIA_LOCATIONS,
+        "speech": "chirp3-hd",
     }
 
 
