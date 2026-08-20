@@ -1,0 +1,58 @@
+[
+  {
+    "slot": "problem",
+    "start": 0,
+    "duration": 29.3,
+    "ends_at": 29.3,
+    "slot_length": 30,
+    "slack": 0.7
+  },
+  {
+    "slot": "rule",
+    "start": 30,
+    "duration": 19.7,
+    "ends_at": 49.7,
+    "slot_length": 22,
+    "slack": 2.3
+  },
+  {
+    "slot": "run",
+    "start": 52,
+    "duration": 38.0,
+    "ends_at": 90.0,
+    "slot_length": 50,
+    "slack": 12.0
+  },
+  {
+    "slot": "human",
+    "start": 102,
+    "duration": 17.6,
+    "ends_at": 119.6,
+    "slot_length": 26,
+    "slack": 8.4
+  },
+  {
+    "slot": "cloud",
+    "start": 128,
+    "duration": 13.2,
+    "ends_at": 141.2,
+    "slot_length": 17,
+    "slack": 3.8
+  },
+  {
+    "slot": "models",
+    "start": 145,
+    "duration": 28.1,
+    "ends_at": 173.1,
+    "slot_length": 33,
+    "slack": 4.9
+  },
+  {
+    "slot": "close",
+    "start": 178,
+    "duration": 28.1,
+    "ends_at": 206.1,
+    "slot_length": 62.0,
+    "slack": 33.9
+  }
+]
