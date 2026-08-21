@@ -10,7 +10,7 @@ reagents and pulls drifting analysers on its own. It can never release a patient
 a human, however confident it is.
 
 > **Submission:** All Things Agentic Hackathon · track **The Fortified Enterprise Fleet**
-> **Live service:** `https://praetor-519854598879.us-central1.run.app` (private; see [Access for judges](#access-for-judges))
+> **Live console:** https://praetor-519854598879.us-central1.run.app · **Source:** https://github.com/G-ojies/praetor
 
 ---
 
@@ -322,17 +322,23 @@ Built to run on a clinic's budget, not a demo budget.
 
 ---
 
-## Access for judges
+## Access
 
-The service is deployed **private**, because it makes Gemini calls on the project's billing and
-an open endpoint is an open invoice. Access is granted per principal:
+The console is **public and needs no credentials**: https://praetor-519854598879.us-central1.run.app
 
-```bash
-gcloud run services add-iam-policy-binding praetor --region us-central1 \
-  --member="user:<judge@example.com>" --role=roles/run.invoker
-```
+It is not open, though. Going public turns every endpoint into a cost surface, so three tiers
+guard it ([`service/guard.py`](service/guard.py)):
 
-Repository access has been granted to `testing@devpost.com` and `cloudhackathons@google.com`.
+| Endpoint | Limit | Why |
+|---|---|---|
+| `/ingest` | **never public** | runs the fleet and can invoke Gemini. Verifies the Google-signed OIDC token itself and requires the push service account — a signed token is not enough, since any Google account can mint one |
+| `/api/media/*`, `/api/memory` | 6 per hour per client | each call invokes a paid model |
+| everything else | 120 per minute per client | reads, bounded so a loop cannot bury the service |
+
+The buckets are in-process, which suits a single-instance deployment and would need Redis if that
+changed.
+
+The repository is public, so `testing@devpost.com` and `cloudhackathons@google.com` need no grant.
 
 ---
 

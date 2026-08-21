@@ -160,6 +160,6 @@ language models near a working laboratory.
 ---
 
 *Praetor is built on Gemini 3.7 Flash, the Google GenAI SDK, Cloud Run, Firestore, Pub/Sub and
-Secret Manager. Source and architecture: [repository link]*
+Secret Manager. Source and architecture: https://github.com/G-ojies/praetor*
 
 *#AllThingsAgentic*

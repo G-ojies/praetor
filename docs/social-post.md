@@ -19,7 +19,7 @@
 >
 > Built on Gemini 3.7 Flash + Cloud Run + Firestore for #AllThingsAgentic
 >
-> [repo link]
+> https://github.com/G-ojies/praetor
 
 ## X — the bug thread (post separately, it travels further)
 
@@ -64,7 +64,7 @@
 
 ## Notes before posting
 
-- Replace `[repo link]` once the repository is public.
+- Replace `https://github.com/G-ojies/praetor` once the repository is public.
 - The bug thread outperforms the announcement post; post it as its own thread a day later.
 - The hashtag is **#AllThingsAgentic** — required for the bonus point. It must appear in the post
   itself, not only in a reply.
