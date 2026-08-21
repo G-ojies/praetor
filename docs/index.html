@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The agent may move the lab toward safety, and never away from it</title>
+<meta name="description" content="Building an autonomous agent fleet you can actually point at a working clinical laboratory.">
+<meta property="og:title" content="The agent may move the lab toward safety, and never away from it">
+<meta property="og:description" content="Building an autonomous agent fleet you can actually point at a working clinical laboratory.">
+<meta property="og:type" content="article">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#F6F8F9;--surface:#FFF;--surface-2:#EDF1F3;--ink:#10161C;--ink-2:#47555F;
+  --ink-3:#7A8791;--rule:#D8E0E4;--rule-strong:#BCC8CE;--accent:#0E7C86;--accent-soft:#DFEFF0;
+  --allow:#2E7A5B;--allow-bg:#E2F0E9;--deny:#A5382F;--deny-bg:#F6E2E0;--esc:#A8720F;--esc-bg:#F6EBD8;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0D1215;--surface:#141B20;--surface-2:#1C252B;--ink:#E6ECEF;--ink-2:#9BA9B2;
+  --ink-3:#6E7C85;--rule:#263239;--rule-strong:#35454E;--accent:#3FB3BD;--accent-soft:#123033;
+  --allow:#5CAE87;--allow-bg:#13291F;--deny:#D2685C;--deny-bg:#2C1917;--esc:#D69B3C;--esc-bg:#2C2314;
+}}
+:root[data-theme="dark"]{
+  --ground:#0D1215;--surface:#141B20;--surface-2:#1C252B;--ink:#E6ECEF;--ink-2:#9BA9B2;
+  --ink-3:#6E7C85;--rule:#263239;--rule-strong:#35454E;--accent:#3FB3BD;--accent-soft:#123033;
+  --allow:#5CAE87;--allow-bg:#13291F;--deny:#D2685C;--deny-bg:#2C1917;--esc:#D69B3C;--esc-bg:#2C2314;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:"Public Sans",system-ui,sans-serif;font-size:17px;line-height:1.68;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto;padding:0 24px 110px}
+header{padding:78px 0 0}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:24px}
+h1{font-family:Newsreader,Georgia,serif;font-weight:500;font-size:clamp(36px,5.6vw,52px);
+  line-height:1.1;letter-spacing:-.018em;margin:0 0 18px;text-wrap:balance}
+.standfirst{font-family:Newsreader,Georgia,serif;font-style:italic;font-size:21px;
+  color:var(--ink-2);margin:0 0 14px}
+.byline{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-3);
+  border-top:1px solid var(--rule);padding-top:20px;margin-top:34px}
+.byline a{color:var(--accent)}
+article{margin-top:46px}
+h2{font-family:Newsreader,Georgia,serif;font-weight:500;font-size:31px;letter-spacing:-.012em;
+  margin:56px 0 14px;text-wrap:balance}
+h3{font-size:17px;font-weight:600;margin:34px 0 8px}
+p{margin:0 0 20px;text-wrap:pretty}
+blockquote{margin:30px 0;padding:16px 22px;border-left:3px solid var(--accent);
+  background:var(--accent-soft);border-radius:0 4px 4px 0}
+blockquote p{margin:0;font-family:Newsreader,Georgia,serif;font-size:20px;line-height:1.5}
+code{font-family:"IBM Plex Mono",monospace;font-size:.85em;background:var(--surface-2);
+  padding:2px 6px;border-radius:3px}
+pre{background:var(--surface-2);border:1px solid var(--rule);border-radius:4px;
+  padding:16px 18px;overflow-x:auto;margin:0 0 22px}
+pre code{background:none;padding:0;font-size:13.5px;line-height:1.65}
+table{border-collapse:collapse;width:100%;font-size:15px;margin:0 0 24px;display:block;
+  overflow-x:auto}
+th{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3);text-align:left;font-weight:500;
+  padding:10px 14px;border-bottom:1px solid var(--rule-strong)}
+td{padding:11px 14px;border-bottom:1px solid var(--rule);vertical-align:top}
+strong{font-weight:600}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+hr{border:none;border-top:1px solid var(--rule);margin:52px 0}
+ul,ol{margin:0 0 22px;padding-left:24px}
+li{margin-bottom:8px}
+footer{margin-top:60px;padding-top:24px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-3)}
+footer a{color:var(--accent)}
+</style></head>
+<body><div class="wrap">
+<header>
+  <div class="eyebrow">Agent engineering &middot; August 2026</div>
+  <h1>The agent may move the lab toward safety, and never away from it</h1>
+<p class="standfirst">Building an autonomous agent fleet you can actually point at a working clinical laboratory.</p>
+</header>
+<article><p>There is a failure that happens in under-resourced laboratories and it is almost never anybody&rsquo;s
+fault.</p>
+<p>A refrigerator compressor starts to degrade overnight. Not dramatically — it does not fail, it
+just stops holding temperature quite as well. The reagent stored inside slowly loses potency.
+Control results begin drifting downward, and here is the part that matters: they stay inside two
+standard deviations for roughly forty hours.</p>
+<p>Forty hours of results that look fine on a Levey-Jennings chart, because they <em>are</em> fine on a
+Levey-Jennings chart. By the time Westgard multirules finally reject, a day and a half of patient
+results have gone out on a reagent that was already wrong.</p>
+<p>The signal was real the whole time. It was just distributed across three systems that do not talk
+to each other, and too slow for one person covering four clinic sites to notice.</p>
+<p>That is a good problem for an agent fleet. It is also a terrifying one, because the obvious next
+sentence — &ldquo;so let the agents fix it&rdquo; — is how you get a language model invalidating patient
+results.</p>
+<h2>The thing I got right, eventually</h2>
+<p>I built Praetor for Google&rsquo;s All Things Agentic hackathon. Five agents watching quality control,
+cold-chain telemetry and reagent lots across four clinics on behalf of one medical laboratory
+scientist.</p>
+<p>The design decision the whole system rests on took me three attempts to state properly. It ended
+up as one sentence:</p>
+<blockquote>
+<p><strong>The fleet may move the laboratory toward safety on its own, and may never move it away from
+safety, however confident it is.</strong></p>
+</blockquote>
+<p>Every action in the system carries a <em>safety direction</em>.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Actions</th>
+<th>Autonomous?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>tightens</strong> — fails closed</td>
+<td>hold a batch, quarantine a lot, take an analyser offline</td>
+<td><strong>yes</strong></td>
+</tr>
+<tr>
+<td><strong>neutral</strong></td>
+<td>observe, notify, reorder stock</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><strong>loosens</strong> — fails open</td>
+<td>release a batch, clear a quarantine, return an instrument to service</td>
+<td><strong>never</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Holding results is reversible: worst case, a courier run and a delay. Releasing results you should
+not have released is not an incident you can undo — those numbers are in a patient&rsquo;s chart and
+somebody has acted on them.</p>
+<p>So the gate checks safety direction <em>before</em> it checks severity, reversibility, confidence, or
+budget. There is a test asserting the strong form: no combination of capability, incident
+severity, remaining budget or model confidence lets any fail-open action reach <code>ALLOW</code>. Not at
+0.99 confidence. Not at SEV4. Never.</p>
+<p>This is what makes the rest of the autonomy defensible. The fleet handles the routine ninety per
+cent unattended precisely <em>because</em> the ten per cent that matters is structurally out of reach.</p>
+<h2>The gate is not a model</h2>
+<p>Everything an agent proposes passes through one deterministic component:</p>
+<pre><code>0. HALT      circuit breaker tripped
+1. DENY      action outside the closed catalogue
+2. DENY      malformed parameters
+3. DENY      no capability grant
+4. ESCALATE  action loosens the safety posture
+5. ESCALATE  incident more severe than this agent's ceiling
+6. ESCALATE  action is irreversible
+7. ESCALATE  confidence below the floor
+8. ESCALATE  blast-radius budget exhausted
+9. ALLOW
+</code></pre>
+<p>Agents cannot emit free-form commands. They emit typed actions from a closed catalogue, and an
+unrecognised action is a denial rather than an interpretation.</p>
+<p>The distinction between <code>DENY</code> and <code>ESCALATE</code> turned out to matter more than I expected. <code>DENY</code>
+means <em>never, re-plan</em>. <code>ESCALATE</code> means <em>plausibly right, but not yours to decide alone</em>. A
+system with only one of those is either a straitjacket or a rubber stamp.</p>
+<p>And a line I would now draw on any agent system: <strong>detection is deterministic, judgement is the
+model&rsquo;s, permission is neither.</strong> Westgard rules have correct answers, so no model is asked
+whether <code>2-2s</code> fired. A model that hallucinates a QC violation is worse than no automation,
+because it spends the scientist&rsquo;s trust on noise, and you only get to spend that once.</p>
+<h2>Four bugs that only appeared when I ran it</h2>
+<p>Every one of these was found by executing the thing, not by reading it.</p>
+<p><strong>It pulled the analyser.</strong> Two reagent lots rejecting on the same instrument, so my guard
+concluded the instrument was at fault and took it out of service. But both lots were in the <em>same
+failed fridge</em>. The common factor was the refrigerator. Counting distinct lots reads a reagent
+problem as an instrument fault and removes a rural clinic&rsquo;s only analyser — turning a quality
+incident into an outage.</p>
+<p><strong>Then it pulled the analyser again, for a subtler reason.</strong> I fixed the above by checking each
+lot&rsquo;s storage location. But <code>lot_storage.get(lot)</code> returns <code>None</code> when the record is missing, and
+<code>None</code> is not in the set of failed fridges — so a lot with unknown provenance counted as <em>having
+no cold-chain explanation</em>. Two of those and the analyser comes out again, because of a gap in
+the system&rsquo;s own bookkeeping. And that gap is not exotic: it is exactly what a mid-incident
+restart looks like.</p>
+<p>Missing data has to fail closed. If you do not know where a lot was stored, you cannot rule out
+the cold chain, so you cannot blame the instrument. The fleet now says so out loud, too — failing
+closed <em>silently</em> would look like ignoring a failing analyser.</p>
+<p><strong>The circuit breaker ate the fleet.</strong> Every flagged control run counted as an ineffective
+remediation, so after three the fleet halted permanently. The fix was a real distinction rather
+than a bigger threshold: actions are <em>remediating</em> or <em>bookkeeping</em>, and only remediating ones
+count. Standing down should mean the fleet stops trying to fix things — not that it goes silent
+on the person who now has to.</p>
+<p><strong>The console reported tampering on an intact chain.</strong> This one nearly made it to the demo video.
+Every decision is appended to a hash-chained, Ed25519-signed audit log, and the console verifies
+it in the browser from the public key alone. Except: JavaScript has one number type. A value
+Python wrote as <code>1.0</code> parses indistinguishably from <code>1</code> and re-serialises as <code>"1"</code> — different
+bytes, different SHA-256, <em>chain FAILED</em>. Live payloads carry <code>confidence: 1.0</code>.</p>
+<p>The fix is to never parse numbers into JS numbers at all. The console ships a JSON parser that
+keeps each number&rsquo;s original wire token, so Python&rsquo;s formatting survives verbatim. There is now a
+test that extracts the canonicaliser out of the shipped console and diffs it against Python, so
+the two cannot drift apart.</p>
+<h2>Two things about cost</h2>
+<p>A clinic is not a demo budget, and building as though it were produces a system nobody can run.</p>
+<p>The frontier model is called <strong>once per incident</strong>, not once per event — 735 events, one Gemini
+call, and a test asserting that, because if it ever climbs the clinic&rsquo;s bill climbs with it.
+High-volume cold-chain telemetry is triaged by a much cheaper tier. Incident memory is a linear
+scan over a few hundred vectors rather than a vector index, because a four-site network produces a
+few hundred incidents a year and the index would cost more than the scan.</p>
+<p>The second thing: I could not get Veo working on this project at any published version. Rather
+than claim an integration that does not run, I asked what it was <em>for</em> — a handover the scientist
+can consume while driving between sites — and used speech synthesis instead, which serves that
+need better anyway.</p>
+<h2>The thing I would tell someone starting</h2>
+<p>Write the tests as sentences about what must never happen, and name them that way.</p>
+<pre><code>test_no_fail_open_action_is_reachable_by_any_grant
+test_the_analyser_is_never_taken_out_of_service
+test_unknown_lot_provenance_never_implicates_the_analyser
+test_quarantine_lands_a_full_day_before_qc_ever_rejects
+test_the_control_lot_in_the_healthy_fridge_never_rejects
+</code></pre>
+<p>That last one is the control that makes the whole scenario mean anything: an identical reagent lot
+in a <em>working</em> fridge runs clean for all five days. Without it, the drift could be the analyte, the
+instrument, or my simulator&rsquo;s own noise, and the system would prove nothing.</p>
+<p>Autonomy is not the hard part. Deciding what the autonomy is structurally forbidden to do, and
+then proving it cannot, is the hard part — and it is the only reason anyone would let a fleet of
+language models near a working laboratory.</p>
+<hr />
+<p><em>Praetor is built on Gemini 3.7 Flash, the Google GenAI SDK, Cloud Run, Firestore, Pub/Sub and
+Secret Manager. Source and architecture: https://github.com/G-ojies/praetor</em></p>
+<p><em>#AllThingsAgentic</em></p></article>
+<footer>
+  Praetor is open source: <a href="https://github.com/G-ojies/praetor">github.com/G-ojies/praetor</a><br>
+  Live console: <a href="https://praetor-519854598879.us-central1.run.app">praetor-519854598879.us-central1.run.app</a><br>
+  Built for the All Things Agentic Hackathon &middot; #AllThingsAgentic
+</footer>
+</div></body></html>
