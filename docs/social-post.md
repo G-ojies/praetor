@@ -19,7 +19,8 @@
 >
 > Built on Gemini 3.7 Flash + Cloud Run + Firestore for #AllThingsAgentic
 >
-> https://github.com/G-ojies/praetor
+> Write-up: https://g-ojies.github.io/praetor/
+> Code: https://github.com/G-ojies/praetor
 
 ## X — the bug thread (post separately, it travels further)
 
@@ -48,6 +49,7 @@
 > Missing data has to **fail closed**. Don't know where it was stored? Then you can't rule out the
 > cold chain, so you can't blame the instrument.
 >
+> Full write-up: https://g-ojies.github.io/praetor/
 > #AllThingsAgentic
 
 ## Short form — Bluesky / Mastodon / Threads
@@ -61,6 +63,14 @@
 > laboratory. #AllThingsAgentic
 
 ---
+
+## The blog post
+
+Published and live, which is the other half of the bonus:
+**https://g-ojies.github.io/praetor/**
+
+Link it from the announcement post — the write-up carries the argument the
+280-character version can only gesture at.
 
 ## Notes before posting
 
