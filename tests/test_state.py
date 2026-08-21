@@ -167,3 +167,42 @@ def test_a_restored_blackboard_keeps_the_diagnosis():
     restored = store.load()
     assert restored.root_cause == first.board.root_cause
     assert restored.root_cause_confidence == first.board.root_cause_confidence
+
+
+# -- the queue the fleet is waiting on a human for --------------------------
+
+def test_pending_escalations_survive_a_restart():
+    """Cloud Run scales to zero. A control plane whose whole claim is that it
+    stops and asks cannot forget what it asked -- a dropped queue is a batch
+    that stays held with nobody left to release it."""
+    store = FakeStore()
+    first = build(store=store)
+    first.run(LabSim().run())
+    pending = [p.proposal_id for p in first.escalations]
+    assert pending, "nothing escalated, so this test proves nothing"
+
+    second = build(store=store, board=store.load())
+    assert [p.proposal_id for p in second.escalations] == pending
+
+
+def test_a_restored_escalation_is_still_ratifiable():
+    """Round-tripping through Firestore must not produce a proposal the
+    executor cannot act on."""
+    store = FakeStore()
+    first = build(store=store)
+    first.run(LabSim().run())
+    target = first.escalations[0].proposal_id
+
+    second = build(store=store, board=store.load())
+    result = second.ratify(target, approved=True, who="a.okafor@clinic")
+    assert result["status"] == "executed"
+    assert result["result"]["status"] == "ok"
+
+
+def test_ratifying_removes_it_from_the_persisted_queue():
+    store = FakeStore()
+    fleet = build(store=store)
+    fleet.run(LabSim().run())
+    target = fleet.escalations[0].proposal_id
+    fleet.ratify(target, approved=True, who="a.okafor@clinic")
+    assert target not in [p["proposal_id"] for p in store.doc["escalations"]]

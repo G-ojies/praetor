@@ -84,7 +84,11 @@ class Fleet:
         # which matters when most events are an unremarkable fridge reading.
         self.store = store
         self.timeline: list[TimelineEntry] = []
-        self.escalations: list[ActionProposal] = []
+
+    @property
+    def escalations(self) -> list[ActionProposal]:
+        """Lives on the blackboard, so it survives a cold start."""
+        return self.board.escalations
 
     @property
     def chain(self) -> AuditChain:

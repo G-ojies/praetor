@@ -23,7 +23,7 @@ from __future__ import annotations
 from typing import Any
 
 from praetor.agents.base import Blackboard, Signal
-from praetor.common.types import Severity
+from praetor.common.types import ActionProposal, Severity
 
 DOC = "blackboard"
 
@@ -46,6 +46,7 @@ def to_dict(board: Blackboard) -> dict[str, Any]:
     return {
         "signals": [_signal_to_dict(s) for s in board.signals],
         "seen_keys": sorted(board.seen_keys),
+        "escalations": [p.to_dict() for p in board.escalations],
         "held_batches": sorted(board.held_batches),
         "quarantined_lots": sorted(board.quarantined_lots),
         "offline_instruments": sorted(board.offline_instruments),
@@ -59,6 +60,7 @@ def from_dict(d: dict[str, Any]) -> Blackboard:
     board = Blackboard()
     board.signals = [_signal_from_dict(s) for s in d.get("signals", [])]
     board.seen_keys = set(d.get("seen_keys", []))
+    board.escalations = [ActionProposal.from_dict(p) for p in d.get("escalations", [])]
     board.held_batches = set(d.get("held_batches", []))
     board.quarantined_lots = set(d.get("quarantined_lots", []))
     board.offline_instruments = set(d.get("offline_instruments", []))
@@ -106,6 +108,7 @@ class PersistentBlackboard(Blackboard):
         loaded = store.load()
         board.signals = loaded.signals
         board.seen_keys = loaded.seen_keys
+        board.escalations = loaded.escalations
         board.held_batches = loaded.held_batches
         board.quarantined_lots = loaded.quarantined_lots
         board.offline_instruments = loaded.offline_instruments

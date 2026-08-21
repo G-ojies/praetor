@@ -68,6 +68,12 @@ class Blackboard:
 
     signals: list[Signal] = field(default_factory=list)
     proposals: list[ActionProposal] = field(default_factory=list)
+    # What the fleet is waiting on a human for. On the blackboard rather than
+    # on the Fleet object because it must survive a restart: Cloud Run scales
+    # to zero, and a control plane whose whole claim is "it stops and asks"
+    # cannot forget what it asked. A dropped queue is a batch that stays held
+    # with nobody left to release it.
+    escalations: list[ActionProposal] = field(default_factory=list)
     # Every (kind, subject) the fleet has *ever* signalled. Kept separately and
     # permanently, because `seen` drives once-only behaviour -- if it consulted
     # the trimmed signal window instead, an old excursion would age out and the
