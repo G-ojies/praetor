@@ -9,3 +9,8 @@ venv/
 # Never commit the audit chain's signing key.
 *.pem
 signing-key*
+
+# Recorded media: regenerate with scripts/, do not version binaries
+evidence/*.mp4
+evidence/*.mp3
+evidence/vo/
