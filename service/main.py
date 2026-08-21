@@ -50,11 +50,29 @@ from praetor.policy_config import default_breaker, default_budget, default_capab
 from praetor.reasoning import select_reasoner
 from praetor.sim.lab import Event, EventKind
 from praetor.state import FirestoreBlackboard
+from service.guard import enforce_rate_limit, verify_push_token
 
 PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT", "praetor-505914")
 NAMESPACE = os.environ.get("PRAETOR_NAMESPACE", "live")
 
 app = FastAPI(title="Praetor", docs_url="/api/docs")
+
+
+@app.middleware("http")
+async def rate_limit(request: Request, call_next):
+    """Applied to everything. The service is publicly reachable so that judges
+    need no access grant, which means every endpoint is now a cost surface.
+
+    Starlette does not route an HTTPException raised inside middleware through
+    the app's exception handlers -- it surfaces as a 500 -- so the response is
+    built here rather than raised.
+    """
+    try:
+        enforce_rate_limit(request)
+    except HTTPException as exc:
+        return JSONResponse({"detail": exc.detail}, status_code=exc.status_code,
+                            headers=exc.headers or {})
+    return await call_next(request)
 
 _fleet: Fleet | None = None
 
@@ -91,6 +109,10 @@ def health() -> dict:
 @app.post("/ingest")
 async def ingest(request: Request) -> JSONResponse:
     """Pub/Sub push. One message is one telemetry reading or control result."""
+    # Cloud Run no longer authenticates callers, so the endpoint that runs the
+    # fleet and can invoke Gemini authenticates them itself.
+    verify_push_token(request)
+
     envelope = await request.json()
     message = envelope.get("message")
     if not message:
