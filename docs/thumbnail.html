@@ -1,0 +1,55 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:wght@500&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1200px;height:800px;overflow:hidden}
+body{position:relative;background:#0D1215;color:#E6ECEF;font-family:"Public Sans",sans-serif;
+  display:flex;flex-direction:column;justify-content:center;gap:44px;padding:54px 64px 110px;
+  background-image:radial-gradient(1100px 620px at 88% -12%, #12303355, transparent 70%)}
+.top{position:absolute;left:64px;right:64px;top:52px;display:flex;align-items:flex-start;justify-content:space-between}
+.mark{font-family:Newsreader,Georgia,serif;font-size:78px;line-height:1;letter-spacing:-.022em}
+.mark span{color:#3FB3BD}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:14px;letter-spacing:.20em;
+  text-transform:uppercase;color:#6E7C85;margin-top:18px}
+.seal{font-family:"IBM Plex Mono",monospace;font-size:14px;color:#5CAE87;
+  background:#13291F;border-radius:4px;padding:10px 16px;display:flex;gap:11px;align-items:center;
+  white-space:nowrap}
+.seal i{width:9px;height:9px;border-radius:50%;background:#5CAE87;display:block}
+.rule{font-family:Newsreader,Georgia,serif;font-size:50px;line-height:1.16;letter-spacing:-.014em;
+  max-width:1010px}
+.rule b{color:#3FB3BD;font-weight:500}
+.rule .neg{color:#D2685C;font-weight:500}
+.chips{display:flex;gap:12px;margin-top:28px}
+.chip{font-family:"IBM Plex Mono",monospace;font-size:15px;letter-spacing:.05em;
+  padding:9px 16px;border-radius:4px}
+.allow{color:#5CAE87;background:#13291F}
+.esc{color:#D69B3C;background:#2C2314}
+.deny{color:#D2685C;background:#2C1917}
+.foot{position:absolute;left:64px;right:64px;bottom:44px;display:flex;justify-content:space-between;align-items:flex-end;
+  font-family:"IBM Plex Mono",monospace;font-size:15px;color:#6E7C85;
+  border-top:1px solid #263239;padding-top:20px}
+.foot b{color:#9BA9B2;font-weight:500}
+</style></head><body>
+  <div class="top">
+    <div>
+      <div class="mark">Prae<span>tor</span></div>
+      <div class="kicker">Laboratory agent fleet</div>
+    </div>
+    <div class="seal"><i></i>chain verified &middot; 49 entries</div>
+  </div>
+
+  <div>
+    <div class="rule">The fleet may move the lab <b>toward safety</b> on its own.<br>
+      It may <span class="neg">never</span> move it away.</div>
+    <div class="chips">
+      <span class="chip allow">hold &middot; quarantine &middot; pull</span>
+      <span class="chip esc">release &rarr; human</span>
+      <span class="chip deny">shell.exec &rarr; denied</span>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Gemini 3.7 Flash &middot; Cloud Run &middot; Firestore &middot; Pub/Sub</span>
+    <span><b>The gate is not a model.</b></span>
+  </div>
+</body></html>
