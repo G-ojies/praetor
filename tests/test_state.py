@@ -206,3 +206,62 @@ def test_ratifying_removes_it_from_the_persisted_queue():
     target = fleet.escalations[0].proposal_id
     fleet.ratify(target, approved=True, who="a.okafor@clinic")
     assert target not in [p["proposal_id"] for p in store.doc["escalations"]]
+
+
+# -- control points are telemetry, not decisions ----------------------------
+
+def test_control_points_are_retained_for_the_chart():
+    """The argument of the whole system is that the interesting part happens
+    before a rule fires, so the quiet points must be kept, not only the
+    rejections."""
+    store = FakeStore()
+    fleet = build(store=store)
+    fleet.run(LabSim().run())
+    points = fleet.board.qc_points
+    assert points, "no control points retained"
+    quiet = [p for p in points if p["disposition"] == "accept"]
+    assert quiet, "only violations were kept, which is the wrong half"
+
+
+def test_control_points_do_not_cause_a_write_per_qc_run():
+    """Batched deliberately: a write per control result is a bill nobody
+    agreed to for data whose only consumer is a chart."""
+    from praetor.orchestrator import QC_FLUSH_EVERY
+
+    store = FakeStore()
+    fleet = build(store=store)
+    events = LabSim().run()
+    fleet.run(events)
+    qc_runs = len(fleet.board.qc_points)
+    assert qc_runs > QC_FLUSH_EVERY, "too few points for this test to mean anything"
+    assert store.writes < qc_runs, f"{store.writes} writes for {qc_runs} control points"
+
+
+def test_control_points_are_bounded():
+    from praetor.agents.base import MAX_QC_POINTS
+
+    store = FakeStore()
+    fleet = build(store=store)
+    for _ in range(4):
+        fleet.run(LabSim().run())
+    assert len(fleet.board.qc_points) <= MAX_QC_POINTS
+
+
+def test_control_points_survive_a_restart():
+    store = FakeStore()
+    first = build(store=store)
+    first.run(LabSim().run())
+    # Force the tail of the batch out before the container "dies".
+    store.save(first.board)
+    second = build(store=store, board=store.load())
+    assert len(second.board.qc_points) == len(first.board.qc_points)
+    assert second.board.qc_points[-1]["run_id"] == first.board.qc_points[-1]["run_id"]
+
+
+def test_a_decision_still_writes_immediately():
+    """Batching telemetry must not delay persisting a decision."""
+    store = FakeStore()
+    fleet = build(store=store)
+    events = [e for e in LabSim().run() if e.at <= T0 + 34 * HOUR]
+    fleet.run(events)
+    assert "lot:REAG-4471" in (store.doc or {}).get("quarantined_lots", [])

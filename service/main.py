@@ -164,6 +164,38 @@ def state() -> dict:
     }
 
 
+@app.get("/api/qc")
+def qc_series() -> dict:
+    """Control results, grouped into series a Levey-Jennings plot can draw.
+
+    Returned whole rather than filtered server-side: the window is bounded, so
+    one request beats a round trip every time the scientist switches level.
+    """
+    grouped: dict[tuple, dict] = {}
+    for point in fleet().board.qc_points:
+        key = (point["lot_id"], point["analyte"], point["level"])
+        series = grouped.setdefault(key, {
+            "lot_id": point["lot_id"], "analyte": point["analyte"],
+            "level": point["level"], "target_mean": point["target_mean"],
+            "target_sd": point["target_sd"], "points": [],
+        })
+        series["points"].append({
+            "at": point["at"], "z": point["z"], "value": point["value"],
+            "run_id": point["run_id"], "disposition": point["disposition"],
+            "rules": point["rules"],
+        })
+
+    series = sorted(grouped.values(), key=lambda s: (s["analyte"], s["level"], s["lot_id"]))
+    quarantined = fleet().board.quarantined_lots
+    for s in series:
+        s["quarantined"] = s["lot_id"] in quarantined
+    return {
+        "series": series,
+        "analytes": sorted({s["analyte"] for s in series}),
+        "levels": sorted({s["level"] for s in series}),
+    }
+
+
 @app.get("/api/escalations")
 def escalations() -> dict:
     """What the fleet is waiting on a human for."""

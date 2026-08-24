@@ -21,6 +21,14 @@ from praetor.gate.audit import AuditChain
 from praetor.gate.policy import PolicyGate
 
 
+# Control points are telemetry, not decisions. Persisting one per QC run turns
+# a five-day replay into a write per control result, which is a bill nobody
+# agreed to for data whose only consumer is a chart. They are batched: a
+# decision writes immediately, control points ride along, and a flush is forced
+# once enough have accumulated that losing them would leave a visible gap.
+QC_FLUSH_EVERY = 25
+
+
 class Executor(Protocol):
     def execute(self, proposal: ActionProposal) -> dict: ...
 
@@ -83,6 +91,7 @@ class Fleet:
         # That keeps Firestore seeing a write per change rather than per event,
         # which matters when most events are an unremarkable fridge reading.
         self.store = store
+        self._qc_at_last_write = 0
         self.timeline: list[TimelineEntry] = []
 
     @property
@@ -111,20 +120,31 @@ class Fleet:
 
     # -- persistence --------------------------------------------------------
     def _snapshot(self) -> dict | None:
+        """State that must be durable the moment it changes.
+
+        Control points are deliberately excluded: they change on every QC run
+        and are batched separately, so diffing them here would defeat the
+        batching entirely.
+        """
         if self.store is None:
             return None
         from praetor.state import to_dict
 
-        return to_dict(self.board)
+        snap = to_dict(self.board)
+        snap.pop("qc_points", None)
+        return snap
 
     def _persist_if_changed(self, before: dict | None) -> bool:
         if self.store is None or before is None:
             return False
-        from praetor.state import to_dict
 
-        if to_dict(self.board) == before:
+        decisions_changed = self._snapshot() != before
+        qc_backlog = len(self.board.qc_points) - self._qc_at_last_write
+        if not decisions_changed and qc_backlog < QC_FLUSH_EVERY:
             return False
+
         self.store.save(self.board)
+        self._qc_at_last_write = len(self.board.qc_points)
         return True
 
     def _step(self, event: Any) -> None:

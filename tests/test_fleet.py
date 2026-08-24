@@ -261,3 +261,67 @@ def test_unknown_provenance_is_reported_rather_than_swallowed():
     unknown = fleet.board.of_kind("provenance.unknown")
     assert unknown, "the fleet went quiet instead of explaining itself"
     assert "stays in service" in unknown[0].summary
+
+
+# -- transport must not change the verdict ----------------------------------
+
+def test_westgard_verdicts_do_not_depend_on_delivery_order():
+    """Pub/Sub does not guarantee ordering, and Westgard is entirely a claim
+    about sequence. Fed a shuffled stream the rules fire on runs that never
+    happened, so the agent has to order events itself rather than inherit a
+    precondition from its transport."""
+    import random
+
+    from praetor.agents.base import Blackboard
+    from praetor.gate.audit import AuditChain
+
+    def run(events):
+        fleet = Fleet(
+            agents=[ColdChainAgent(), QCAgent(), LotAgent(), Diagnostician(build_offline_reasoner())],
+            gate=PolicyGate(capabilities=default_capabilities(), budget=default_budget(),
+                            breaker=default_breaker(), chain=AuditChain()),
+            board=Blackboard(),
+        )
+        fleet.run(events)
+        return fleet
+
+    ordered = LabSim().run()
+    shuffled = ordered[:]
+    random.Random(7).shuffle(shuffled)
+
+    a, b = run(ordered), run(shuffled)
+
+    def rejections(fleet):
+        return sorted(
+            (p["run_id"], tuple(sorted(p["rules"])))
+            for p in fleet.board.qc_points if p["disposition"] == "reject"
+        )
+
+    assert rejections(a) == rejections(b), "delivery order changed which runs rejected"
+
+
+def test_a_rule_needing_ten_points_cannot_fire_on_the_fourth():
+    """The symptom that exposed it: a 10x rejection four hours into a series
+    that was only four hours old."""
+    from praetor.agents.base import Blackboard
+    from praetor.gate.audit import AuditChain
+
+    fleet = Fleet(
+        agents=[ColdChainAgent(), QCAgent(), LotAgent(), Diagnostician(build_offline_reasoner())],
+        gate=PolicyGate(capabilities=default_capabilities(), budget=default_budget(),
+                        breaker=default_breaker(), chain=AuditChain()),
+        board=Blackboard(),
+    )
+    import random
+    events = LabSim().run()
+    random.Random(11).shuffle(events)
+    fleet.run(events)
+
+    for lot in {p["lot_id"] for p in fleet.board.qc_points}:
+        for level in (1, 2, 3):
+            series = sorted((p for p in fleet.board.qc_points
+                             if p["lot_id"] == lot and p["level"] == level),
+                            key=lambda p: p["at"])
+            for i, p in enumerate(series):
+                if "10x" in p["rules"]:
+                    assert i >= 9, f"10x fired at position {i} of {lot} L{level}"

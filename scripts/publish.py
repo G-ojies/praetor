@@ -28,6 +28,8 @@ def main() -> int:
     ap.add_argument("--topic", default="praetor-telemetry")
     ap.add_argument("--hours", type=int, default=70)
     ap.add_argument("--from-hour", type=int, default=0)
+    ap.add_argument("--rate", type=float, default=12.0,
+                    help="messages per second; the service runs one instance")
     args = ap.parse_args()
 
     from google.cloud import pubsub_v1
@@ -39,15 +41,26 @@ def main() -> int:
     events = [e for e in LabSim().run() if lo <= e.at <= hi]
     print(f"publishing {len(events)} events to {path}")
 
-    futures = [
-        publisher.publish(path, json.dumps({
+    # Paced deliberately. The service runs a single instance -- see
+    # service/main.py for why -- so firing several hundred messages at once
+    # makes Cloud Run reject pushes with "no available instance", Pub/Sub
+    # retry them, and the replay take longer than if it had been throttled.
+    # A real clinic produces a reading a minute, not six hundred at once.
+    import time
+
+    interval = 1.0 / args.rate if args.rate > 0 else 0.0
+    futures = []
+    for i, e in enumerate(events):
+        futures.append(publisher.publish(path, json.dumps({
             "kind": e.kind.value, "at": e.at, "site": e.site, "payload": e.payload,
-        }).encode())
-        for e in events
-    ]
+        }).encode()))
+        if interval:
+            time.sleep(interval)
+        if i and i % 100 == 0:
+            print(f"  {i}/{len(events)}")
     for f in futures:
-        f.result(timeout=60)
-    print(f"published {len(futures)} messages")
+        f.result(timeout=120)
+    print(f"published {len(futures)} messages at ~{args.rate:.0f}/s")
     return 0
 
 

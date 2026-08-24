@@ -272,6 +272,15 @@ TOKEN=$(gcloud auth print-identity-token)
   --region us-central1 --format='value(status.url)')" --hours 60 --token "$TOKEN"
 ```
 
+### Bursts
+
+The ingest path is paced, not throttled by the service. A single instance cannot
+absorb several hundred Pub/Sub pushes at once — Cloud Run rejects them with *no
+available instance*, Pub/Sub retries, and the replay takes longer than if it had
+been slowed down in the first place. `scripts/publish.py` therefore paces itself
+(`--rate`, default 12/s). A clinic produces a reading a minute; only the replay
+harness ever produces six hundred at once.
+
 ### Why one instance
 
 The audit chain is durable and transactional. The blackboard is durable but **not** concurrent —

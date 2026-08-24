@@ -70,6 +70,10 @@ h2 .count{margin-left:auto;color:var(--ink-2);background:var(--surface-2);
 .empty{padding:30px 18px;text-align:center;color:var(--ink-3);font-size:14px}
 
 /* escalations */
+/* Bounded, with its own scroll. Seven pending approvals would otherwise push
+   the control chart and the fleet state below the fold, and the chart is the
+   thing that explains why any of them exist. */
+#escalations{max-height:340px;overflow-y:auto}
 .esc-card{border:1px solid var(--esc);border-left-width:3px;border-radius:3px;
   background:var(--esc-bg);padding:15px 16px;margin-bottom:12px}
 .esc-card:last-child{margin-bottom:0}
@@ -116,6 +120,33 @@ input:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
   font-size:12.5px;color:var(--ink-2)}
 .verifynote code{font-family:"IBM Plex Mono",monospace;font-size:11.5px}
 .fail{color:var(--deny)}
+
+/* Levey-Jennings. Single series, so no legend -- the title names it. */
+.qc-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.qc-controls .grp{display:flex;gap:4px}
+.qc-controls button{padding:5px 11px;font-size:13px}
+.qc-controls button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.qc-controls .lbl{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3);margin-right:2px}
+#qc-chart svg{display:block;width:100%;height:auto;overflow:visible}
+.qc-band-3{fill:var(--surface-2)}
+.qc-band-2{fill:var(--surface-3)}
+.qc-grid{stroke:var(--rule);stroke-width:1}
+.qc-mean{stroke:var(--rule-strong);stroke-width:1;stroke-dasharray:4 3}
+.qc-axis{font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--ink-3)}
+.qc-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.qc-dot{fill:var(--accent);stroke:var(--surface);stroke-width:2}
+.qc-bad{fill:var(--deny);stroke:var(--surface);stroke-width:2}
+.qc-warn{fill:var(--esc);stroke:var(--surface);stroke-width:2}
+.qc-flag{font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--deny);font-weight:500}
+.qc-hit{fill:transparent;cursor:crosshair}
+.qc-cross{stroke:var(--ink-3);stroke-width:1;stroke-dasharray:3 3;pointer-events:none}
+.qc-tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--rule-strong);
+  border-radius:3px;padding:8px 11px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;
+  box-shadow:var(--shadow, 0 6px 20px -10px rgba(0,0,0,.5));z-index:20;white-space:nowrap}
+.qc-tip b{color:var(--ink);font-weight:500}
+.qc-note{font-size:13px;color:var(--ink-3);margin:14px 0 0}
+#qc-chart{position:relative}
 .mediahint{margin:0 0 14px;font-size:13.5px;color:var(--ink-3)}
 .mediarow{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}
 #media-out img{max-width:100%;height:auto;border-radius:3px;border:1px solid var(--rule);display:block}
@@ -147,6 +178,14 @@ input:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
     <section>
       <h2>Awaiting a human <span class="count" id="esc-count">–</span></h2>
       <div class="body" id="escalations"><div class="empty">Loading…</div></div>
+    </section>
+    <section>
+      <h2>Control chart <span class="count" id="qc-count">–</span></h2>
+      <div class="body">
+        <div class="qc-controls" id="qc-controls"></div>
+        <div id="qc-chart"><div class="empty">Loading…</div></div>
+        <p class="qc-note" id="qc-note"></p>
+      </div>
     </section>
     <section>
       <h2>Fleet state</h2>
@@ -438,6 +477,140 @@ $("gen-audio").onclick = e => media(e.target, "/api/media/handover.mp3", (url, m
     `<audio controls src="${url}"></audio><div class="mediacap">${model}</div>`;
 });
 
+// ---------------------------------------------------------------------------
+// Levey-Jennings control chart.
+//
+// The point of drawing this at all: the drift that motivates the whole system
+// stays inside two standard deviations for forty hours. A table of violations
+// cannot show that, because during those forty hours there are none. The quiet
+// points are the argument.
+// ---------------------------------------------------------------------------
+let QC = null, qcPick = {analyte: null, level: null};
+
+const W = 640, H = 260, M = {t: 14, r: 16, b: 26, l: 34};
+
+function qcRender(){
+  const host = $("qc-chart");
+  if(!QC || !QC.series.length){
+    host.innerHTML = `<div class="empty">No control results yet.</div>`;
+    $("qc-count").textContent = "0"; $("qc-note").textContent = ""; return;
+  }
+  const shown = QC.series.filter(s => s.analyte === qcPick.analyte && num(s.level) === qcPick.level);
+  if(!shown.length){ host.innerHTML = `<div class="empty">No results for this selection.</div>`; return; }
+
+  // One lot at a time: the affected lot if there is one, else the first.
+  const s = shown.find(x => x.quarantined) || shown[0];
+  const pts = s.points.slice().sort((a,b) => num(a.at) - num(b.at));
+  $("qc-count").textContent = pts.length;
+
+  const t0 = num(pts[0].at), t1 = num(pts[pts.length-1].at) || t0 + 1;
+  const span = (t1 - t0) || 1;
+  const x = t => M.l + ((num(t) - t0) / span) * (W - M.l - M.r);
+  const y = z => M.t + ((4 - Math.max(-4, Math.min(4, z))) / 8) * (H - M.t - M.b);
+
+  const band = (a, b, cls) =>
+    `<rect class="${cls}" x="${M.l}" y="${y(b)}" width="${W-M.l-M.r}" height="${y(a)-y(b)}"/>`;
+  const gridline = z =>
+    `<line class="${z===0?'qc-mean':'qc-grid'}" x1="${M.l}" y1="${y(z)}" x2="${W-M.r}" y2="${y(z)}"/>` +
+    `<text class="qc-axis" x="${M.l-7}" y="${y(z)+3.5}" text-anchor="end">${z>0?'+':''}${z}s</text>`;
+
+  const path = pts.map((p,i) => `${i?'L':'M'}${x(p.at).toFixed(1)},${y(num(p.z)).toFixed(1)}`).join(" ");
+
+  // Marker shape carries the same information as the colour, so identity never
+  // rests on colour alone: circle accepted, triangle rejected, square warned.
+  const marks = pts.map((p,i) => {
+    const cx = x(p.at), cy = y(num(p.z)), d = p.disposition;
+    if(d === "reject")
+      return `<polygon class="qc-bad" points="${cx},${cy-6} ${cx+6},${cy+5} ${cx-6},${cy+5}"/>`;
+    if(d === "warn")
+      return `<rect class="qc-warn" x="${cx-4.5}" y="${cy-4.5}" width="9" height="9"/>`;
+    return `<circle class="qc-dot" cx="${cx}" cy="${cy}" r="4"/>`;
+  }).join("");
+
+  // Label the FIRST rejection only. A rule name on every violation is noise;
+  // the moment it first fired is the fact worth reading off the chart.
+  const firstBad = pts.findIndex(p => p.disposition === "reject");
+  let flag = "";
+  if(firstBad >= 0){
+    const p = pts[firstBad], cx = x(p.at), cy = y(num(p.z));
+    const anchor = cx > W - 130 ? "end" : "start";
+    flag = `<text class="qc-flag" x="${cx + (anchor==="end"?-9:9)}" y="${cy+16}" text-anchor="${anchor}">`
+         + `${(p.rules||[]).join(" ")} rejected</text>`;
+  }
+
+  const hours = t => Math.round((num(t) - t0) / 3600);
+  const ticks = [pts[0], pts[Math.floor(pts.length/2)], pts[pts.length-1]].map(p =>
+    `<text class="qc-axis" x="${x(p.at)}" y="${H-8}" text-anchor="middle">h${hours(p.at)}</text>`).join("");
+
+  host.innerHTML =
+    `<svg viewBox="0 0 ${W} ${H}" role="img"
+       aria-label="Levey-Jennings control chart for ${s.analyte} level ${raw(s.level)} on ${s.lot_id}">
+       ${band(-3,3,"qc-band-3")}${band(-2,2,"qc-band-2")}
+       ${[-3,-2,-1,0,1,2,3].map(gridline).join("")}
+       <path class="qc-line" d="${path}"/>${marks}${flag}${ticks}
+       <line class="qc-cross" id="qc-cross" x1="0" y1="${M.t}" x2="0" y2="${H-M.b}" style="display:none"/>
+       <rect class="qc-hit" id="qc-hit" x="${M.l}" y="${M.t}" width="${W-M.l-M.r}" height="${H-M.t-M.b}"/>
+     </svg><div class="qc-tip" id="qc-tip" style="display:none"></div>`;
+
+  const rejects = pts.filter(p => p.disposition === "reject").length;
+  const quietHours = firstBad >= 0 ? hours(pts[firstBad].at) : hours(pts[pts.length-1].at);
+  $("qc-note").innerHTML =
+    `<b>${s.analyte} level ${raw(s.level)}</b> on <span class="mono">${s.lot_id}</span>`
+    + (s.quarantined ? ` &middot; <span style="color:var(--esc)">quarantined</span>` : "")
+    + `<br>${rejects} rejected of ${pts.length} results. `
+    + (firstBad >= 0
+        ? `The first rejection came at h${quietHours} &mdash; the drift was already running before it.`
+        : `Nothing rejected across the whole window.`);
+
+  // Crosshair + tooltip. An SVG chart on a page is interactive by default.
+  const svg = host.querySelector("svg"), hit = $("qc-hit"), tip = $("qc-tip"), cross = $("qc-cross");
+  hit.onmousemove = ev => {
+    const box = svg.getBoundingClientRect();
+    const sx = (ev.clientX - box.left) * (W / box.width);
+    let best = pts[0], bd = Infinity;
+    for(const p of pts){ const d = Math.abs(x(p.at) - sx); if(d < bd){ bd = d; best = p; } }
+    cross.setAttribute("x1", x(best.at)); cross.setAttribute("x2", x(best.at));
+    cross.style.display = "";
+    const rules = (best.rules || []).length ? ` &middot; ${best.rules.join(" ")}` : "";
+    tip.innerHTML = `<b>h${hours(best.at)}</b> &nbsp; z ${num(best.z) >= 0 ? "+" : ""}${num(best.z).toFixed(2)}`
+      + `<br>${num(best.value).toFixed(3)} &middot; ${best.disposition}${rules}`;
+    tip.style.display = "";
+    const px = (x(best.at) / W) * box.width;
+    tip.style.left = Math.min(box.width - tip.offsetWidth - 4, Math.max(0, px + 12)) + "px";
+    tip.style.top = ((y(num(best.z)) / H) * box.height - 8) + "px";
+  };
+  hit.onmouseleave = () => { tip.style.display = "none"; cross.style.display = "none"; };
+}
+
+function qcControls(){
+  if(!QC || !QC.analytes.length) return;
+  if(!qcPick.analyte) qcPick.analyte = QC.analytes[0];
+  if(qcPick.level === null) qcPick.level = num(QC.levels[1] ?? QC.levels[0]);
+  const btn = (label, on, kind, val) =>
+    `<button aria-pressed="${on}" data-kind="${kind}" data-val="${val}">${label}</button>`;
+  $("qc-controls").innerHTML =
+    `<span class="lbl">Analyte</span><span class="grp">`
+    + QC.analytes.map(a => btn(a, a === qcPick.analyte, "analyte", a)).join("") + `</span>`
+    + `<span class="lbl" style="margin-left:10px">Level</span><span class="grp">`
+    + QC.levels.map(l => btn("L" + raw(l), num(l) === qcPick.level, "level", raw(l))).join("") + `</span>`;
+  $("qc-controls").querySelectorAll("button").forEach(b => {
+    b.onclick = () => {
+      if(b.dataset.kind === "analyte") qcPick.analyte = b.dataset.val;
+      else qcPick.level = Number(b.dataset.val);
+      qcControls(); qcRender();
+    };
+  });
+}
+
+async function loadQC(){
+  try{
+    QC = await getJSON("/api/qc");
+    qcControls(); qcRender();
+  }catch(err){
+    $("qc-chart").innerHTML = `<div class="empty fail">${err.message}</div>`;
+  }
+}
+
 async function loadMemory(){
   try{
     const m = await getJSON("/api/memory");
@@ -455,8 +628,9 @@ async function loadMemory(){
   }
 }
 
-$("refresh").onclick = () => { load(); loadMemory(); };
+$("refresh").onclick = () => { load(); loadQC(); loadMemory(); };
 load();
+loadQC();
 loadMemory();
 </script>
 </body>

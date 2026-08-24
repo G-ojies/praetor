@@ -54,6 +54,13 @@ class Signal:
 # a storage ceiling.
 MAX_SIGNALS = 250
 
+# Control results kept for the chart. A scientist reads drift off a
+# Levey-Jennings plot, so the points have to be retained, not just the
+# violations they eventually trigger -- the whole argument of this system is
+# that the interesting part happens *before* a rule fires. Bounded for the same
+# reason the signal list is: this persists as one Firestore document.
+MAX_QC_POINTS = 400
+
 
 @dataclass
 class Blackboard:
@@ -74,6 +81,10 @@ class Blackboard:
     # cannot forget what it asked. A dropped queue is a batch that stays held
     # with nobody left to release it.
     escalations: list[ActionProposal] = field(default_factory=list)
+    # Trailing control results, oldest first. One flat list rather than a dict
+    # of series, so the bound is on total document size rather than on a series
+    # count that could grow without anyone noticing.
+    qc_points: list[dict[str, Any]] = field(default_factory=list)
     # Every (kind, subject) the fleet has *ever* signalled. Kept separately and
     # permanently, because `seen` drives once-only behaviour -- if it consulted
     # the trimmed signal window instead, an old excursion would age out and the
@@ -90,6 +101,11 @@ class Blackboard:
     # Set by the diagnostician once it has a hypothesis worth acting on.
     root_cause: str | None = None
     root_cause_confidence: float = 0.0
+
+    def record_qc(self, point: dict[str, Any]) -> None:
+        self.qc_points.append(point)
+        if len(self.qc_points) > MAX_QC_POINTS:
+            del self.qc_points[: len(self.qc_points) - MAX_QC_POINTS]
 
     def add(self, signal: Signal) -> Signal:
         self.signals.append(signal)
