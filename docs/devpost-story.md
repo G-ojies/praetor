@@ -24,6 +24,8 @@ Five agents watch quality control, cold-chain telemetry and reagent lot performa
 
 In the scenario above the fleet quarantines the affected reagent **at hour 32** — a full day before QC produces a single rejection — because the cold chain is a leading indicator and quarantine fails closed.
 
+The console makes that leading indicator visible. It draws the control results as a live Levey-Jennings plot, and the point of drawing it is what *is not* there: for the first forty hours the drift walks steadily downward while every point stays inside two standard deviations, so there is not one violation marker to see. A table of rejections cannot show a stretch whose whole danger is that it produces no rejections. The quiet points are the argument.
+
 ### The judgement that matters
 
 Two reagent lots reject on the same analyser. A naive system counts distinct lots, concludes the instrument is at fault, and takes a rural clinic's **only analyser** out of service.
@@ -87,6 +89,8 @@ Every one of these was found by running the thing, not by reading it.
 
 **Then it pulled the analyser again, for a subtler reason.** The fix checks each lot's storage location — but `lot_storage.get(lot)` returns `None` when the record is missing, and `None` is not in the set of failed fridges, so a lot with unknown provenance counted as *having no cold-chain explanation*. Two of those and the analyser comes out again, because of a gap in the system's own bookkeeping. That gap is not exotic: it is exactly what a mid-incident restart looks like. **Missing data has to fail closed.**
 
+**Drawing the control chart exposed a bug in the very detection it was plotting.** A `10x` rejection appeared four hours into a series only four hours old — and `10x` needs ten consecutive results on one side of the mean, so it cannot fire on the fourth point. Pub/Sub does not guarantee delivery order, and Westgard is entirely a claim about *sequence*: the agent was building each series in arrival order. Inserting in time order is necessary but not sufficient — ten points consecutive in what has arrived so far may have gaps in reality — so the disposition of every point is now recomputed from the whole ordered series, and a late arrival corrects earlier verdicts instead of compounding them. Fixed in the agent, not by switching on ordered delivery: an agent that is only correct while its transport preserves order has a hidden precondition, and a replay, a retry or a dead-letter redrive would each break it again.
+
 **The console reported tampering on an intact chain.** This nearly reached the demo video. JavaScript has one number type, so a value Python wrote as `1.0` parses indistinguishably from `1` and re-serialises as `"1"` — different bytes, different SHA-256, *chain FAILED*. Live payloads carry `confidence: 1.0`. The fix is to never parse numbers into JS numbers: the console ships a JSON parser that keeps each number's original wire token.
 
 **The audit chain dropped writes under load.** A hash chain is serial by construction, so the head document is a contention point by design. Firestore's default five retries are exhausted at eight concurrent writers and the append *throws* — losing a decision record, the one thing this component exists to prevent. Now threads serialise in-process first, cross-container contention retries with backoff, and if it still cannot commit the gate **raises rather than proceeding**.
@@ -99,6 +103,7 @@ Every one of these was found by running the thing, not by reading it.
 
 - **100 tests**, named after what must never happen: `test_no_fail_open_action_is_reachable_by_any_grant`, `test_the_analyser_is_never_taken_out_of_service`, `test_unknown_lot_provenance_never_implicates_the_analyser`.
 - A test extracts the canonicaliser **out of the shipped console** and diffs it against Python, so the two halves of the audit chain cannot silently drift apart.
+- The control chart's colours were **validated, not eyeballed** — three simultaneous series failed a normal-vision separation check, so the form is one level at a time behind a selector, violations carry a marker *shape* as well as a status colour, and there is no legend left to read.
 - The frontier model is called **once** across 735 events — with a test asserting it, because if that ever climbs a clinic's cloud bill climbs with it.
 - Least privilege throughout: the runtime account's secret access is scoped to a single secret, and the signing key never touches the repository, the logs or Firestore.
 

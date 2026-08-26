@@ -19,7 +19,7 @@
 | GCP project | `praetor-505914`, org `greatojies-org`, $300 trial to 17 Nov |
 | Cloud Run | revision `praetor-00009-ff5`, `us-central1`, max 1 instance |
 
-**17 commits · 115 tests · 5,449 lines.**
+**19 commits · 122 tests · 5,743 lines.**
 
 ---
 
@@ -116,7 +116,7 @@ javascript  multi-agent  healthcare  laboratory  westgard
 | Criterion | Weight | State |
 |---|---|---|
 | Innovation & Operational Utility | 40% | strong — unlikely hero, real autonomy, non-obvious diagnosis |
-| Architectural Discipline | 30% | strong — deterministic gate, signed chain, 115 tests |
+| Architectural Discipline | 30% | strong — deterministic gate, signed chain, 122 tests |
 | Demo & Production Readiness | 30% | README, diagram, thumbnail, story done; **video outstanding** |
 | Bonus (max +1.0) | — | **+0.8 banked** (4 extra models +0.6, blog +0.2) · social +0.2 pending |
 
@@ -171,7 +171,7 @@ events, with a test asserting it.
 
 ```bash
 python3 -m venv .venv && ./.venv/bin/pip install -r requirements.txt
-./.venv/bin/python -m pytest tests/ -q          # 115 tests, no credentials needed
+./.venv/bin/python -m pytest tests/ -q          # 122 tests, no credentials needed
 ./.venv/bin/python scripts/demo.py              # full scenario offline
 
 ./.venv/bin/python scripts/make_voiceover.py    # narration
