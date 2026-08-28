@@ -210,7 +210,7 @@ verifiable audit chain.
 Run the tests:
 
 ```bash
-./.venv/bin/python -m pytest tests/ -q      # 98 tests
+./.venv/bin/python -m pytest tests/ -q      # 122 tests
 ```
 
 ---
@@ -372,7 +372,7 @@ praetor/
   reasoning.py           two-tier model seam + offline implementation
   orchestrator.py        the fleet loop
 service/                 Cloud Run app + console
-tests/                   98 tests
+tests/                   122 tests
 ```
 
 ## Tests worth reading
