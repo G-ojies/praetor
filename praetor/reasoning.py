@@ -15,7 +15,7 @@ Two tiers because the workloads are genuinely different, not to collect a bonus:
 
 `OfflineReasoner` implements the same interface deterministically, so the whole
 fleet runs, and is testable, with no network and no credentials. That is not a
-mock for the tests' benefit -- it is how the scenario stays reproducible while
+mock for the tests' benefit: it is how the scenario stays reproducible while
 the agents around it change.
 """
 
@@ -37,8 +37,8 @@ DEFAULT_MODELS = {
     # "Gemini 3.5 or newer" is the contest floor; 3.7 Flash is current stable.
     Tier.REASON: os.environ.get("PRAETOR_REASON_MODEL", "gemini-3.7-flash"),
     # Flash-Lite, not Gemma. Gemma is not served on Vertex's publisher endpoint
-    # at all -- it requires a self-deployed Model Garden endpoint on a GPU that
-    # cannot scale to zero, which is the wrong shape for a clinic's budget --
+    # at all: it requires a self-deployed Model Garden endpoint on a GPU that
+    # cannot scale to zero, which is the wrong shape for a clinic's budget,
     # and it 404s on the Gemini API path for this account too. Flash-Lite is
     # roughly an order of magnitude cheaper than Flash per token and answers
     # "is this reading interesting?" perfectly well, which is all this tier does.
@@ -58,7 +58,7 @@ MEDIA_LOCATION = os.environ.get("PRAETOR_MEDIA_LOCATION", "us-central1")
 # Discovered by probing the live catalogue, because the docs do not say so.
 # No video entry. Veo is inaccessible on this project at every published
 # version and needs allowlisting, so listing it here would put a model this
-# deployment does not use into /api/models -- an endpoint whose only job is to
+# deployment does not use into /api/models, an endpoint whose only job is to
 # state truthfully what is running. The need Veo covered, a handover
 # consumable without hands or eyes, is met by speech.
 MEDIA_MODELS = {

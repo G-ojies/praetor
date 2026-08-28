@@ -1,7 +1,7 @@
 """Blackboard persistence.
 
 The audit chain was persisted first because losing a decision record is
-unforgivable. Losing blackboard state is merely bad -- but "merely bad" here
+unforgivable. Losing blackboard state is merely bad, but "merely bad" here
 means quarantining a lot twice, or forgetting a batch is already held, and both
 read to a scientist as a system that cannot be trusted. Cloud Run scales to
 zero, so the restart case is not hypothetical; it is the normal case.
@@ -173,7 +173,7 @@ def test_a_restored_blackboard_keeps_the_diagnosis():
 
 def test_pending_escalations_survive_a_restart():
     """Cloud Run scales to zero. A control plane whose whole claim is that it
-    stops and asks cannot forget what it asked -- a dropped queue is a batch
+    stops and asks cannot forget what it asked: a dropped queue is a batch
     that stays held with nobody left to release it."""
     store = FakeStore()
     first = build(store=store)

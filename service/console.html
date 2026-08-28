@@ -121,7 +121,7 @@ input:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
 .verifynote code{font-family:"IBM Plex Mono",monospace;font-size:11.5px}
 .fail{color:var(--deny)}
 
-/* Levey-Jennings. Single series, so no legend -- the title names it. */
+/* Levey-Jennings. Single series, so no legend: the title names it. */
 .qc-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
 .qc-controls .grp{display:flex;gap:4px}
 .qc-controls button{padding:5px 11px;font-size:13px}
@@ -222,14 +222,14 @@ input:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
 //   json.dumps(obj, sort_keys=True, separators=(",",":"))
 //
 // The trap: JavaScript has one number type, so a payload written by Python as
-// 1.0 parses to a value indistinguishable from 1 and re-serialises as "1" --
+// 1.0 parses to a value indistinguishable from 1 and re-serialises as "1":
 // a different byte string, a different SHA-256, and a console that reports
 // tampering on a chain that is perfectly intact. Live payloads carry
 // confidence: 1.0, so this is not hypothetical.
 //
 // The fix is to never parse numbers into JS numbers at all. This parser keeps
 // each number's original token from the wire, so Python's own formatting is
-// preserved verbatim -- 1.0 stays "1.0", 1e-07 stays "1e-07".
+// preserved verbatim: 1.0 stays "1.0", 1e-07 stays "1e-07".
 // ---------------------------------------------------------------------------
 function parsePreservingNumbers(text){
   let i = 0;

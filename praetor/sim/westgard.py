@@ -3,7 +3,7 @@
 This is the statistical core of laboratory quality control, and it is not
 optional detail: a lab that runs controls without multirules catches gross
 failure and misses drift. Praetor's QC agent reasons *about* these violations,
-but does not compute them -- the rules are deterministic, so a language model
+but does not compute them: the rules are deterministic, so a language model
 has no business deciding whether 2-2s fired.
 
 Each control result is expressed as a z-score: (value - target_mean) / target_sd.
@@ -87,7 +87,7 @@ def evaluate(series: list[QCPoint], across_levels: list[QCPoint] | None = None) 
         out.append(Violation(
             "1-3s", RuleAction.REJECT, ErrorType.RANDOM,
             f"{latest.analyte} L{latest.level} at {zs[-1]:+.2f}s", (latest.run_id,)))
-    # 1-2s: warning only. Never rejects alone -- treating it as a rejection is
+    # 1-2s: warning only. Never rejects alone: treating it as a rejection is
     # the classic false-rejection trap in QC.
     elif abs(zs[-1]) > 2:
         out.append(Violation(

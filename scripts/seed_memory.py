@@ -4,8 +4,8 @@
 A deployment that has been running for a year has an archive; a fresh one does
 not, and an empty archive makes the recall feature untestable and invisible.
 These are plausible past incidents for a four-site clinic network, written the
-way a scientist writes a shift book. They are clearly seed data -- each id
-begins with `seed_` -- so nothing here can be mistaken for a real incident this
+way a scientist writes a shift book. They are clearly seed data (each id
+begins with `seed_`), so nothing here can be mistaken for a real incident this
 fleet handled.
 
     python3 scripts/seed_memory.py [--project praetor-505914]

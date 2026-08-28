@@ -1,8 +1,8 @@
 """The fleet loop.
 
 Every event is offered to every agent. Agents emit signals deterministically,
-then are asked for proposals. Every proposal -- without exception, including
-observation -- goes through the policy gate, and only ALLOW reaches the executor.
+then are asked for proposals. Every proposal (without exception, including
+observation) goes through the policy gate, and only ALLOW reaches the executor.
 
 The ordering matters and is not incidental: proposals are collected from all
 agents before any are evaluated, so the gate sees a round at a time and the

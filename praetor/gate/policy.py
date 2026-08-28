@@ -20,8 +20,8 @@ Check order matters and is deliberate, cheapest and most absolute first:
   9. ALLOW
 
 Check 4 is the one that matters most in a laboratory. The fleet may move the
-lab toward safety on its own -- hold a batch, quarantine a lot, pull a drifting
-analyser -- because every one of those fails closed. It may never move the lab
+lab toward safety on its own (hold a batch, quarantine a lot, pull a drifting
+analyser) because every one of those fails closed. It may never move the lab
 away from safety unattended, however confident the diagnosis, because releasing
 a patient result you should not have released is not an incident you can undo.
 

@@ -41,8 +41,8 @@ def main() -> int:
     events = [e for e in LabSim().run() if lo <= e.at <= hi]
     print(f"publishing {len(events)} events to {path}")
 
-    # Paced deliberately. The service runs a single instance -- see
-    # service/main.py for why -- so firing several hundred messages at once
+    # Paced deliberately. The service runs a single instance (see
+    # service/main.py for why), so firing several hundred messages at once
     # makes Cloud Run reject pushes with "no available instance", Pub/Sub
     # retry them, and the replay take longer than if it had been throttled.
     # A real clinic produces a reading a minute, not six hundred at once.

@@ -71,7 +71,7 @@ class ActionSpec:
     # Does this action attempt to *fix* something? Flagging a run, notifying a
     # scientist and reordering stock are bookkeeping: they change no clinical
     # state and cannot thrash. Only remediating actions count against the
-    # circuit breaker, and only they are withheld once it trips -- a fleet that
+    # circuit breaker, and only they are withheld once it trips: a fleet that
     # has stood down should still be telling you what it sees.
     remediating: bool = True
 

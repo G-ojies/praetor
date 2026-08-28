@@ -1,7 +1,7 @@
 """Scribe: turns a resolved incident into something a human will actually read.
 
 Runs once, at the end, over the audit chain and the blackboard. It is the only
-agent whose output is prose, and it holds no capabilities at all -- it cannot
+agent whose output is prose, and it holds no capabilities at all: it cannot
 propose an action, so nothing it writes can move the lab.
 """
 

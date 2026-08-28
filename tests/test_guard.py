@@ -1,7 +1,7 @@
 """The guard on a publicly reachable control plane.
 
-Going public means judges need no access grant -- worth a lot, since a failed
-invite means an unjudgeable entry -- but it also means every endpoint that
+Going public means judges need no access grant (worth a lot, since a failed
+invite means an unjudgeable entry), but it also means every endpoint that
 costs money is reachable by anyone. These tests hold the two lines that matter:
 telemetry ingestion is never open, and paid-model endpoints are bounded.
 """
@@ -100,7 +100,7 @@ def test_ingest_rejects_a_malformed_bearer_token(monkeypatch):
 
 
 def test_ingest_rejects_a_valid_token_from_the_wrong_principal(monkeypatch):
-    """A signed Google token is not enough -- it must be *our* push identity.
+    """A signed Google token is not enough: it must be *our* push identity.
     Any Google account can mint a valid OIDC token."""
     from fastapi import HTTPException
     from service import guard

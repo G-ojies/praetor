@@ -13,7 +13,7 @@ Three surfaces, deliberately separated by who is allowed to use them:
                  browser from the public key. It is a reader, not a trustee.
 
 Both halves of the state are durable. The audit chain is append-only and
-tamper-evident; the blackboard -- signals, quarantined lots, held batches -- is
+tamper-evident; the blackboard (signals, quarantined lots, held batches) is
 a bounded working set written through on change. A cold start restores the
 blackboard rather than beginning fresh, because Cloud Run scales to zero and a
 restart midway through an incident is the normal case, not an edge one.
@@ -64,7 +64,7 @@ async def rate_limit(request: Request, call_next):
     need no access grant, which means every endpoint is now a cost surface.
 
     Starlette does not route an HTTPException raised inside middleware through
-    the app's exception handlers -- it surfaces as a 500 -- so the response is
+    the app's exception handlers (it surfaces as a 500), so the response is
     built here rather than raised.
     """
     try:
@@ -247,7 +247,7 @@ def audit() -> dict:
 # Generated media is cached in process. It is deliberately not cached in
 # Firestore: a 1 MB PNG does not fit a document, and paying Cloud Storage for
 # an artefact regenerated a handful of times is worse than regenerating it.
-# Nothing here runs on an event -- media is requested, never triggered.
+# Nothing here runs on an event: media is requested, never triggered.
 _media_cache: dict[str, Any] = {}
 
 

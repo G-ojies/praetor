@@ -7,7 +7,7 @@ seems only fair.
 Each segment is synthesised separately and laid onto a silent bed at a fixed
 start time, so the narration lines up with the shot list rather than drifting.
 If a segment overruns its slot the script says so instead of silently pushing
-everything later -- an overrun that eats the four-minute limit is worth knowing
+everything later: an overrun that eats the four-minute limit is worth knowing
 about before you record, not after.
 
     python3 scripts/make_voiceover.py --out evidence/voiceover.mp3

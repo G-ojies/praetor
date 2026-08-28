@@ -54,7 +54,7 @@ class QCAgent(Agent):
         # Inserted in time order, not arrival order. Pub/Sub does not guarantee
         # ordering, and Westgard is entirely a statement about *sequence*: 2-2s
         # means two consecutive results, 10x means ten on one side in a row. Fed
-        # a shuffled series the rules fire on runs that never happened -- a 10x
+        # a shuffled series the rules fire on runs that never happened: a 10x
         # rejection four hours into a series that is only four hours old.
         #
         # Fixing it here rather than by turning on ordered delivery, because an
@@ -160,7 +160,7 @@ class QCAgent(Agent):
         #
         # Counting distinct rejecting lots is not enough. Two lots stored in the
         # same failing fridge will both reject on the same analyser, and a naive
-        # count reads that as an instrument fault -- taking a clinic's only
+        # count reads that as an instrument fault, taking a clinic's only
         # analyser out of service for a cold-chain problem. So lots whose
         # storage unit is under an active excursion are set aside first; the
         # instrument is implicated only by what is left unexplained.

@@ -7,8 +7,8 @@ and when a new one opens the diagnostician is handed the closest past matches
 before it reasons.
 
 Embeddings rather than keyword search because the same failure is described
-differently every time -- "fridge warm", "cold chain excursion", "compressor
-noise then QC drift" -- and a scientist searching their own notes for the right
+differently every time ("fridge warm", "cold chain excursion", "compressor
+noise then QC drift") and a scientist searching their own notes for the right
 phrase is exactly the friction this is supposed to remove.
 
 Deliberately small: cosine similarity over a Firestore collection, no vector
@@ -29,7 +29,7 @@ COLLECTION = "incident_memory"
 
 # Calibrated against real embeddings rather than guessed, and the calibration
 # is narrower than it looks. Every pair of laboratory sentences is somewhat
-# alike -- an unrelated query about a noisy centrifuge scores about 0.60
+# alike: an unrelated query about a noisy centrifuge scores about 0.60
 # against a cold-chain incident, because both are clinical English about
 # equipment. Genuine matches run 0.77 to 0.86. So the usable window is roughly
 # 0.60 to 0.77 and the floor belongs just above the noise, not just below the
@@ -37,7 +37,7 @@ COLLECTION = "incident_memory"
 #
 #   0.55  returns three confident-looking matches for a question with no
 #         answer in the archive, which is worse than returning nothing
-#   0.78  discards a real match -- an instrument fault genuinely resembling a
+#   0.78  discards a real match: an instrument fault genuinely resembling a
 #         past photometer failure at 0.772
 #   0.72  clears the noise with margin and keeps the true positives
 #

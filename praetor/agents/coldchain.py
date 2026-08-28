@@ -1,8 +1,8 @@
 """Cold-chain agent: watches storage temperature, catches the leading indicator.
 
 This agent exists because the fridge fails roughly a day and a half before the
-control chart says anything. Detection here is a threshold and a duration -- no
-model is involved -- but the volume is high enough that even *reading* every
+control chart says anything. Detection here is a threshold and a duration (no
+model is involved), but the volume is high enough that even *reading* every
 reading with a frontier model would be wasteful, so triage runs on Gemma.
 """
 

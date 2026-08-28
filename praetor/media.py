@@ -1,7 +1,7 @@
 """Three additional Google models, each answering a problem text cannot.
 
 The temptation with a bonus like this is to bolt a model on and call it an
-integration. These are chosen the other way round -- from who actually has to
+integration. These are chosen the other way round: from who actually has to
 act on a laboratory incident in a rural clinic network, and what form that
 person can use.
 
@@ -9,8 +9,8 @@ person can use.
       The person physically standing at the failed fridge at 06:00 is usually
       not the laboratory scientist. It is whoever opened the clinic. A written
       remediation step assumes lab training and fluent clinical English; an
-      illustrated card assumes neither. This renders the physical actions --
-      move these boxes to that fridge, do not open this one -- as a picture.
+      illustrated card assumes neither. This renders the physical actions
+      (move these boxes to that fridge, do not open this one) as a picture.
 
   Speech (Chirp 3 HD)
       The hero covers four sites and is driving between them. A shift handover
@@ -19,8 +19,8 @@ person can use.
 
       This slot was originally Veo. Veo is not accessible on this project at
       any published version, and rather than claim an integration that does not
-      run, the need it was covering -- a handover consumable without hands or
-      eyes -- is met by speech, which serves it better anyway.
+      run, the need it was covering, a handover consumable without hands or
+      eyes, is met by speech, which serves it better anyway.
 
   Music (Lyria)
       At the bench, hands are gloved and eyes are down a microscope. Audio is
@@ -29,7 +29,7 @@ person can use.
       at the end of the run without breaking sterility to check a screen.
 
 Generation is explicit and cached. Veo in particular bills by the second of
-output, so nothing here runs automatically on an event -- an incident that
+output, so nothing here runs automatically on an event: an incident that
 generated a video every time a control drifted would be an expensive incident.
 """
 

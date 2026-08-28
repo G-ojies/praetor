@@ -2,7 +2,7 @@
 
 Going public trades one risk for another. Judges get a link that works without
 an access grant, which is worth a lot when a broken invite means an unjudgeable
-entry -- but every endpoint that costs money becomes reachable by anyone.
+entry, but every endpoint that costs money becomes reachable by anyone.
 
 Three tiers, sized by what abuse of each would actually cost:
 

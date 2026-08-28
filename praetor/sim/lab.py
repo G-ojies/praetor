@@ -152,7 +152,7 @@ class LabSim:
             at = T0 + h * HOUR
 
             # Cold chain: one reading per unit per hour. High volume, low value
-            # individually -- this is the stream Gemma triages before Gemini
+            # individually: this is the stream Gemma triages before Gemini
             # ever sees it.
             for u in units:
                 events.append(Event(EventKind.COLDCHAIN, at, u.site,

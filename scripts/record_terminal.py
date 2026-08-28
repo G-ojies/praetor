@@ -4,7 +4,7 @@
 This is not a mock-up of a terminal. The command runs under a pty, every chunk
 of output is stamped with the moment it actually arrived, and the frames are
 rendered from that timeline. What you see is what happened, at the speed it
-happened -- which is what the contest means by unedited live execution.
+happened, which is what the contest means by unedited live execution.
 
 Handles the subset of terminal behaviour the demo actually uses: printable
 text, newlines, carriage returns, and SGR colour. Anything else is dropped
@@ -90,7 +90,7 @@ class Screen:
             elif ch == "\r":
                 # A pty ends every line with CRLF, so a bare \r handler that
                 # clears the line wipes all of them and renders an empty
-                # screen. Only a lone \r -- the progress-bar redraw -- clears;
+                # screen. Only a lone \r, the progress-bar redraw, clears;
                 # \r\n is consumed as a single line ending.
                 if i < len(text) and text[i] == "\n":
                     i += 1

@@ -49,14 +49,14 @@ class Signal:
 # durable record and it is append-only; the blackboard exists so agents can see
 # what is currently going on. Left unbounded it grows a signal per QC rejection
 # forever, and since it persists as a single Firestore document, it would
-# eventually hit the 1 MiB document limit and start failing writes -- weeks
+# eventually hit the 1 MiB document limit and start failing writes, weeks
 # into a deployment, in a clinic, which is the worst possible time to discover
 # a storage ceiling.
 MAX_SIGNALS = 250
 
 # Control results kept for the chart. A scientist reads drift off a
 # Levey-Jennings plot, so the points have to be retained, not just the
-# violations they eventually trigger -- the whole argument of this system is
+# violations they eventually trigger: the whole argument of this system is
 # that the interesting part happens *before* a rule fires. Bounded for the same
 # reason the signal list is: this persists as one Firestore document.
 MAX_QC_POINTS = 400
@@ -68,7 +68,7 @@ class Blackboard:
 
     Deliberately a plain, inspectable record rather than a conversation history.
     Agents coordinate by writing facts another agent can read, not by passing
-    each other prose -- prose accumulates errors, and a fleet that talks to
+    each other prose: prose accumulates errors, and a fleet that talks to
     itself in natural language drifts. In production this is a Firestore
     document; the interface is the same so the agents cannot tell.
     """
@@ -86,7 +86,7 @@ class Blackboard:
     # count that could grow without anyone noticing.
     qc_points: list[dict[str, Any]] = field(default_factory=list)
     # Every (kind, subject) the fleet has *ever* signalled. Kept separately and
-    # permanently, because `seen` drives once-only behaviour -- if it consulted
+    # permanently, because `seen` drives once-only behaviour: if it consulted
     # the trimmed signal window instead, an old excursion would age out and the
     # fleet would re-announce it as new.
     seen_keys: set[str] = field(default_factory=set)

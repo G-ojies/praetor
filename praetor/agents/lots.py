@@ -2,7 +2,7 @@
 
 The point of this agent is that it does not wait for QC. A lot stored in a unit
 that has been out of range for hours is compromised whether or not the control
-chart has noticed yet, and quarantine fails closed -- the cost of quarantining a
+chart has noticed yet, and quarantine fails closed: the cost of quarantining a
 good lot is a courier run, and the cost of not quarantining a bad one is wrong
 results on real patients. So it quarantines on the excursion alone, and raises
 its confidence when QC confirms.

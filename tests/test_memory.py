@@ -2,7 +2,7 @@
 
 The retrieval threshold is the whole component. Set too low it hands the
 diagnostician confident-looking matches for a question the archive cannot
-answer, which is worse than silence -- a language model offered three weak
+answer, which is worse than silence: a language model offered three weak
 resemblances will build on them. Set too high it discards the real match and
 the memory may as well not exist.
 """

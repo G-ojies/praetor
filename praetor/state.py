@@ -2,8 +2,8 @@
 
 The audit chain was persisted first because losing a decision record is
 unforgivable. The blackboard is the other half: signals, quarantined lots, held
-batches, the pending escalation queue. Losing that is merely bad -- the fleet
-re-derives most of it from the next events -- but "merely bad" here means
+batches, the pending escalation queue. Losing that is merely bad (the fleet
+re-derives most of it from the next events), but "merely bad" here means
 quarantining a lot twice, or forgetting that a batch is already held, and both
 of those are visible to a scientist as the system being unreliable.
 

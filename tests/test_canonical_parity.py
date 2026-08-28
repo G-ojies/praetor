@@ -2,7 +2,7 @@
 
 Both sides of the audit chain independently serialise a payload to canonical
 JSON and SHA-256 it. If those two serialisations ever diverge by a single byte,
-the console reports tampering on an intact chain -- the worst possible failure
+the console reports tampering on an intact chain, the worst possible failure
 for the one feature the whole design rests on.
 
 This is not hypothetical. JavaScript has a single number type, so a value

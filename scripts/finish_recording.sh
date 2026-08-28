@@ -16,7 +16,7 @@ OUT=evidence/praetor-demo.mp4
 LIMIT=240
 
 [ -f "$VIDEO" ] || { echo "  no such file: $VIDEO"; exit 1; }
-[ -f "$VO" ] || { echo "  missing $VO -- run scripts/make_voiceover.py"; exit 1; }
+[ -f "$VO" ] || { echo "  missing $VO: run scripts/make_voiceover.py"; exit 1; }
 
 dur() { ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$1"; }
 
@@ -30,7 +30,7 @@ TOTAL=$(dur "$OUT")
 printf '\n  %s  %.1fs (%.2f min)\n' "$OUT" "$TOTAL" "$(echo "$TOTAL/60" | bc -l)"
 
 if (( $(echo "$TOTAL > $LIMIT" | bc -l) )); then
-  printf '  OVER THE %ss LIMIT. Trim the tail, not the head -- the close is\n' "$LIMIT"
+  printf '  OVER THE %ss LIMIT. Trim the tail, not the head: the close is\n' "$LIMIT"
   printf '  the least load-bearing part:\n'
   printf '    ffmpeg -i %s -t 235 -c copy evidence/praetor-demo-final.mp4\n\n' "$OUT"
 else

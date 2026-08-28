@@ -1,6 +1,6 @@
 """Diagnostician: the only agent permitted to hold an opinion.
 
-Every other agent asserts facts -- a rule fired, a threshold was crossed. This
+Every other agent asserts facts: a rule fired, a threshold was crossed. This
 one takes the set of facts on the blackboard and asks Gemini the question that
 has no deterministic answer: do these signals share a cause, and if so what is
 it? Its output is a hypothesis with a confidence, and that confidence flows

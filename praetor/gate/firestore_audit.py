@@ -3,7 +3,7 @@
 The in-memory chain in `audit.py` is correct but single-process. Moving it to
 Firestore raises a problem that does not exist in memory: a hash chain has a
 *head*, and two agents appending at once must not both build on the same
-predecessor. If they do, the chain forks -- and a forked chain is a chain that
+predecessor. If they do, the chain forks, and a forked chain is a chain that
 cannot be verified, which defeats the entire point of signing it.
 
 So the head is a document, and every append is a Firestore transaction that
@@ -13,7 +13,7 @@ strictly serialised sequence numbers across every instance of every agent, on
 any number of Cloud Run containers.
 
 The signing key comes from Secret Manager. It is never written to Firestore,
-never logged, and never leaves the control plane -- the console verifies the
+never logged, and never leaves the control plane: the console verifies the
 chain with the public key alone.
 """
 

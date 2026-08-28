@@ -78,7 +78,7 @@ def test_the_scientist_is_notified(run):
 
 def test_the_analyser_is_never_taken_out_of_service(run):
     """The misdiagnosis this scenario exists to catch. Two lots reject on the
-    same analyser, which naively reads as an instrument fault -- but both sit in
+    same analyser, which naively reads as an instrument fault, but both sit in
     the same failed fridge, and pulling a rural clinic's only analyser for a
     cold-chain problem turns a reagent incident into an outage."""
     fleet, _ = run
@@ -216,8 +216,8 @@ def test_the_chain_still_verifies_after_ratifications():
 # -- missing data must fail closed ------------------------------------------
 
 def test_unknown_lot_provenance_never_implicates_the_analyser():
-    """The failure this guards against: the fleet's own records have a gap --
-    a lot registration event was missed, or state was restored midway -- and
+    """The failure this guards against: the fleet's own records have a gap
+    (a lot registration event was missed, or state was restored midway) and
     `lot_storage.get(lot)` returns None. Read naively that means "no
     cold-chain explanation", and the fleet pulls a rural clinic's only
     analyser because of a hole in its own bookkeeping. Missing provenance has
@@ -235,7 +235,7 @@ def test_unknown_lot_provenance_never_implicates_the_analyser():
         board=Blackboard(),
     )
     # Replay only the tail of the scenario, so the lot registration events at
-    # h0 and h12 are never seen -- exactly what a mid-incident restart does.
+    # h0 and h12 are never seen: exactly what a mid-incident restart does.
     tail = [e for e in LabSim().run() if e.at >= T0 + 60 * HOUR]
     fleet.run(tail)
 

@@ -6,7 +6,7 @@ thing, at what incident severity, on its own.
 
 Note what is absent. No agent is granted `results.release_batch`,
 `lot.clear_quarantine` or `instrument.return_to_service` as an autonomous
-action -- and even if a grant were added, the gate's fail-open check would still
+action, and even if a grant were added, the gate's fail-open check would still
 escalate it. The grants are the first lock; the safety direction is the second.
 """
 
@@ -28,7 +28,7 @@ GRANTS = [
     Capability("agent.coldchain", "notify.scientist", "*", Severity.SEV1),
     Capability("agent.coldchain", "coldchain.setpoint", "unit:*", Severity.SEV2),
 
-    # QC owns control runs, patient batches, and -- on evidence -- analysers.
+    # QC owns control runs, patient batches, and (on evidence) analysers.
     Capability("agent.qc", "qc.flag_run", "run:*", Severity.SEV2),
     Capability("agent.qc", "results.hold_batch", "batch:*", Severity.SEV2),
     Capability("agent.qc", "instrument.take_offline", "instr:*", Severity.SEV2),
